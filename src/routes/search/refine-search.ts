@@ -1,7 +1,7 @@
 import { generateEmbedding, normalizeArabicText } from "../../embeddings";
+import { startTimer } from "../../utils/timing";
 import { keywordSearchES } from "../../search/elasticsearch-search";
-import { MIN_CHARS_FOR_SEMANTIC } from "./config";
-import { hasQuotedPhrases, getSearchStrategy } from "./query-utils";
+import { shouldSkipSemanticSearch, getSearchStrategy } from "./query-utils";
 import { mergeWithRRF, mergeAndDeduplicateBooks, mergeAndDeduplicateAyahs, mergeAndDeduplicateHadiths } from "./fusion";
 import { rerankUnifiedRefine } from "./rerankers";
 import { semanticSearch, searchAyahsSemantic, searchAyahsHybrid, searchHadithsSemantic, searchHadithsHybrid } from "./engines";
@@ -58,9 +58,9 @@ export async function executeRefineSearch(params: SearchParams): Promise<RefineS
   const _refineTiming = { queryExpansion: 0, parallelSearches: 0, merge: 0, rerank: 0 };
 
   // Step 1: Expand the query
-  const _expansionStart = Date.now();
+  const expansionTimer = startTimer();
   const { queries: expandedRaw, cached: expansionCached } = await expandQueryWithCacheInfo(query, queryExpansionModel);
-  _refineTiming.queryExpansion = Date.now() - _expansionStart;
+  _refineTiming.queryExpansion = expansionTimer();
 
   const expanded = expandedRaw.map((exp, idx) => ({
     ...exp,
@@ -69,16 +69,16 @@ export async function executeRefineSearch(params: SearchParams): Promise<RefineS
   const expandedQueries = expanded.map(e => ({ query: e.query, reason: e.reason }));
 
   // Step 2: Execute parallel searches for all expanded queries
-  const _searchesStart = Date.now();
+  const searchesTimer = startTimer();
   const perQueryTimings: number[] = [];
 
   const querySearches = expanded.map(async (exp, queryIndex) => {
-    const _queryStart = Date.now();
+    const queryTimer = startTimer();
     const q = exp.query;
     const weight = exp.weight;
 
     const normalizedQ = normalizeArabicText(q);
-    const shouldSkipSemantic = normalizedQ.replace(/\s/g, '').length < MIN_CHARS_FOR_SEMANTIC || hasQuotedPhrases(q);
+    const shouldSkipSemantic = shouldSkipSemanticSearch(q);
     const qEmbedding = shouldSkipSemantic ? undefined : await generateEmbedding(normalizedQ, embeddingModel);
 
     const [bookSemantic, bookKeyword] = await Promise.all([
@@ -118,7 +118,7 @@ export async function executeRefineSearch(params: SearchParams): Promise<RefineS
         : [];
     }
 
-    perQueryTimings[queryIndex] = Date.now() - _queryStart;
+    perQueryTimings[queryIndex] = queryTimer();
 
     return {
       books: { results: mergedBooks, weight },
@@ -128,7 +128,7 @@ export async function executeRefineSearch(params: SearchParams): Promise<RefineS
   });
 
   const allResults = await Promise.all(querySearches);
-  _refineTiming.parallelSearches = Date.now() - _searchesStart;
+  _refineTiming.parallelSearches = searchesTimer();
 
   const queryStats = expanded.map((exp, idx) => ({
     query: exp.query,
@@ -145,16 +145,16 @@ export async function executeRefineSearch(params: SearchParams): Promise<RefineS
   const totalBeforeMerge = queryStats.reduce((sum, q) => sum + q.docsRetrieved, 0);
 
   // Step 3: Merge and deduplicate
-  const _mergeStart = Date.now();
+  const mergeTimer = startTimer();
   const mergedBooks = includeBooks ? mergeAndDeduplicateBooks(allResults.map(r => r.books)) : [];
   const mergedAyahs = includeQuran ? mergeAndDeduplicateAyahs(allResults.map(r => r.ayahs)) : [];
   const mergedHadiths = includeHadith ? mergeAndDeduplicateHadiths(allResults.map(r => r.hadiths)) : [];
-  _refineTiming.merge = Date.now() - _mergeStart;
+  _refineTiming.merge = mergeTimer();
 
   const afterMerge = { books: mergedBooks.length, ayahs: mergedAyahs.length, hadiths: mergedHadiths.length };
 
   // Step 4: Unified cross-type reranking
-  const _rerankStart = Date.now();
+  const rerankTimer = startTimer();
   const preRerankBookIds = [...new Set(mergedBooks.slice(0, 30).map((r) => r.bookId))];
   const preRerankBookMap = await getBookMetadataForReranking(preRerankBookIds, bookMetadataCache);
 
@@ -166,7 +166,7 @@ export async function executeRefineSearch(params: SearchParams): Promise<RefineS
   const unifiedResult = await rerankUnifiedRefine(
     query, mergedAyahs, mergedHadiths, mergedBooks, preRerankBookMap, rerankLimits, reranker
   );
-  _refineTiming.rerank = Date.now() - _rerankStart;
+  _refineTiming.rerank = rerankTimer();
 
   return {
     rankedResults: unifiedResult.books,

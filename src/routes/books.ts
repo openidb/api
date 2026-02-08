@@ -1,6 +1,6 @@
 import { Hono } from "hono";
 import { prisma } from "../db";
-import { generateShamelaBookUrl, generateShamelaPageUrl } from "../utils/source-urls";
+import { generateShamelaBookUrl, generateShamelaPageUrl, SOURCES } from "../utils/source-urls";
 import { parsePagination } from "../utils/pagination";
 
 export const booksRoutes = new Hono();
@@ -55,7 +55,7 @@ booksRoutes.get("/", async (c) => {
     total,
     limit,
     offset,
-    _sources: [{ name: "Maktaba Shamela", url: "https://shamela.ws", type: "backup" }],
+    _sources: SOURCES.shamela,
   });
 });
 
@@ -110,7 +110,7 @@ booksRoutes.get("/:id", async (c) => {
       ...book,
       shamelaUrl: generateShamelaBookUrl(book.id),
     },
-    _sources: [{ name: "Maktaba Shamela", url: "https://shamela.ws", type: "backup" }],
+    _sources: SOURCES.shamela,
   });
 });
 
@@ -148,7 +148,7 @@ booksRoutes.get("/:id/pages/:page", async (c) => {
       ...page,
       shamelaUrl: generateShamelaPageUrl(bookId, pageNumber),
     },
-    _sources: [{ name: "Maktaba Shamela", url: "https://shamela.ws", type: "backup" }],
+    _sources: SOURCES.shamela,
   });
 });
 
@@ -178,6 +178,6 @@ booksRoutes.get("/:id/pages", async (c) => {
     total,
     limit,
     offset,
-    _sources: [{ name: "Maktaba Shamela", url: "https://shamela.ws", type: "backup" }],
+    _sources: SOURCES.shamela,
   });
 });

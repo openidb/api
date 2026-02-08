@@ -1,12 +1,13 @@
 import { generateEmbedding, normalizeArabicText } from "../../embeddings";
+import { startTimer } from "../../utils/timing";
 import { normalizeBM25Score } from "../../search/bm25";
 import {
   keywordSearchES,
   keywordSearchHadithsES,
   keywordSearchAyahsES,
 } from "../../search/elasticsearch-search";
-import { MIN_CHARS_FOR_SEMANTIC, STANDARD_FETCH_LIMIT, DEFAULT_AYAH_LIMIT, DEFAULT_HADITH_LIMIT } from "./config";
-import { hasQuotedPhrases, getSearchStrategy } from "./query-utils";
+import { STANDARD_FETCH_LIMIT, DEFAULT_AYAH_LIMIT, DEFAULT_HADITH_LIMIT } from "./config";
+import { shouldSkipSemanticSearch, getSearchStrategy } from "./query-utils";
 import { mergeWithRRF, mergeWithRRFGeneric } from "./fusion";
 import { semanticSearch, searchAyahsSemantic, searchHadithsSemantic } from "./engines";
 import type { SearchParams } from "./params";
@@ -60,7 +61,7 @@ export async function executeStandardSearch(params: SearchParams): Promise<Stand
   const shouldSkipKeyword = searchStrategy === 'semantic_only' || mode === "semantic";
 
   const normalizedQuery = normalizeArabicText(query);
-  const shouldSkipSemantic = normalizedQuery.replace(/\s/g, '').length < MIN_CHARS_FOR_SEMANTIC || hasQuotedPhrases(query);
+  const shouldSkipSemantic = shouldSkipSemanticSearch(query);
   const fetchLimit = mode === "hybrid" ? STANDARD_FETCH_LIMIT : limit;
   const ayahLimit = Math.min(limit, DEFAULT_AYAH_LIMIT);
   const hadithLimit = Math.min(limit, DEFAULT_HADITH_LIMIT);
@@ -73,58 +74,58 @@ export async function executeStandardSearch(params: SearchParams): Promise<Stand
   };
 
   // PHASE 1: Start keyword searches AND embedding generation in parallel
-  const _embStart = Date.now();
+  const embTimer = startTimer();
   const embeddingPromise = shouldSkipSemantic
     ? Promise.resolve(undefined)
     : generateEmbedding(normalizedQuery, embeddingModel);
 
-  const _kwBooksStart = Date.now();
+  const kwBooksTimer = startTimer();
   const keywordBooksPromise = (shouldSkipKeyword || !includeBooks)
     ? Promise.resolve([] as RankedResult[])
     : keywordSearchES(query, fetchLimit, bookId, fuzzyOptions)
-        .then(res => { timing.keyword.books = Date.now() - _kwBooksStart; return res; })
+        .then(res => { timing.keyword.books = kwBooksTimer(); return res; })
         .catch(() => [] as RankedResult[]);
 
-  const _kwAyahsStart = Date.now();
+  const kwAyahsTimer = startTimer();
   const keywordAyahsPromise = (shouldSkipKeyword || bookId || !includeQuran)
     ? Promise.resolve([] as AyahRankedResult[])
     : keywordSearchAyahsES(query, fetchLimit, fuzzyOptions)
-        .then(res => { timing.keyword.ayahs = Date.now() - _kwAyahsStart; return res; })
+        .then(res => { timing.keyword.ayahs = kwAyahsTimer(); return res; })
         .catch(() => [] as AyahRankedResult[]);
 
-  const _kwHadithsStart = Date.now();
+  const kwHadithsTimer = startTimer();
   const keywordHadithsPromise = (shouldSkipKeyword || bookId || !includeHadith)
     ? Promise.resolve([] as HadithRankedResult[])
     : keywordSearchHadithsES(query, fetchLimit, fuzzyOptions)
-        .then(res => { timing.keyword.hadiths = Date.now() - _kwHadithsStart; return res; })
+        .then(res => { timing.keyword.hadiths = kwHadithsTimer(); return res; })
         .catch(() => [] as HadithRankedResult[]);
 
   // Wait for embedding
   const queryEmbedding = await embeddingPromise;
-  timing.embedding = Date.now() - _embStart;
+  timing.embedding = embTimer();
 
   // PHASE 2: Start semantic searches
-  const _semBooksStart = Date.now();
+  const semBooksTimer = startTimer();
   const semanticBooksPromise = (mode === "keyword" || !includeBooks)
     ? Promise.resolve([] as RankedResult[])
     : semanticSearch(query, fetchLimit, bookId, similarityCutoff, queryEmbedding, pageCollection, embeddingModel)
-        .then(res => { timing.semantic.books = Date.now() - _semBooksStart; return res; })
+        .then(res => { timing.semantic.books = semBooksTimer(); return res; })
         .catch(() => [] as RankedResult[]);
 
   const defaultAyahMeta: AyahSearchMeta = { collection: quranCollection, usedFallback: false, embeddingTechnique: "metadata-translation" };
 
-  const _semAyahsStart = Date.now();
+  const semAyahsTimer = startTimer();
   const semanticAyahsPromise = (mode === "keyword" || bookId || !includeQuran)
     ? Promise.resolve({ results: [] as AyahRankedResult[], meta: defaultAyahMeta })
     : searchAyahsSemantic(query, fetchLimit, similarityCutoff, queryEmbedding, quranCollection, embeddingModel)
-        .then(res => { timing.semantic.ayahs = Date.now() - _semAyahsStart; return res; })
+        .then(res => { timing.semantic.ayahs = semAyahsTimer(); return res; })
         .catch(() => ({ results: [] as AyahRankedResult[], meta: defaultAyahMeta }));
 
-  const _semHadithsStart = Date.now();
+  const semHadithsTimer = startTimer();
   const semanticHadithsPromise = (mode === "keyword" || bookId || !includeHadith)
     ? Promise.resolve([] as HadithRankedResult[])
     : searchHadithsSemantic(query, fetchLimit, similarityCutoff, queryEmbedding, hadithCollection, embeddingModel)
-        .then(res => { timing.semantic.hadiths = Date.now() - _semHadithsStart; return res; })
+        .then(res => { timing.semantic.hadiths = semHadithsTimer(); return res; })
         .catch(() => [] as HadithRankedResult[]);
 
   // PHASE 3: Wait for all searches and merge
@@ -139,7 +140,7 @@ export async function executeStandardSearch(params: SearchParams): Promise<Stand
   const semanticAyahsResults = semanticAyahsSearchResult.results;
   const ayahSearchMeta = semanticAyahsSearchResult.meta;
 
-  const _mergeStart = Date.now();
+  const mergeTimer = startTimer();
 
   let rankedResults: RankedResult[];
   let totalAboveCutoff = 0;
@@ -170,7 +171,7 @@ export async function executeStandardSearch(params: SearchParams): Promise<Stand
     normalizeKeyword: (items) => items.map(h => ({ ...h, score: normalizeBM25Score(h.bm25Score ?? h.score ?? 0) })),
   });
 
-  timing.merge = Date.now() - _mergeStart;
+  timing.merge = mergeTimer();
 
   return { rankedResults, ayahsRaw, hadiths, ayahSearchMeta, totalAboveCutoff, timing };
 }

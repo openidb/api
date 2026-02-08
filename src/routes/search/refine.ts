@@ -1,22 +1,19 @@
 import { getCachedExpansion, setCachedExpansion } from "../../query-expansion-cache";
 import { callOpenRouter } from "../../lib/openrouter";
+import { RERANKER_CONFIG } from "./rerankers";
 import type { ExpandedQuery } from "./types";
 
 export function getQueryExpansionModelId(model: string): string {
-  switch (model) {
-    case "gpt-oss-120b":
-      return "openai/gpt-oss-120b";
-    case "gemini-flash":
-    default:
-      return "google/gemini-3-flash-preview";
-  }
+  return RERANKER_CONFIG[model]?.model ?? "google/gemini-3-flash-preview";
 }
 
-export async function expandQuery(query: string, model: string = "gemini-flash"): Promise<ExpandedQuery[]> {
+export async function expandQueryWithCacheInfo(query: string, model: string = "gemini-flash"): Promise<{ queries: ExpandedQuery[]; cached: boolean }> {
   const cached = getCachedExpansion(query);
   if (cached) {
-    return cached;
+    return { queries: cached, cached: true };
   }
+
+  const fallback: ExpandedQuery[] = [{ query, weight: 1.0, reason: "Original query" }];
 
   try {
     const prompt = `You are a search query expansion expert for an Arabic/Islamic text search engine covering Quran, Hadith, and classical Islamic books.
@@ -50,13 +47,13 @@ IMPORTANT:
     });
 
     if (!result) {
-      return [{ query, weight: 1.0, reason: "Original query" }];
+      return { queries: fallback, cached: false };
     }
 
     const match = result.content.match(/\[[\s\S]*\]/);
     if (!match) {
       console.warn("Query expansion returned invalid format");
-      return [{ query, weight: 1.0, reason: "Original query" }];
+      return { queries: fallback, cached: false };
     }
 
     const expanded: string[] = JSON.parse(match[0]);
@@ -77,18 +74,9 @@ IMPORTANT:
     }
 
     setCachedExpansion(query, results);
-    return results;
+    return { queries: results, cached: false };
   } catch (err) {
     console.warn("Query expansion error:", err);
-    return [{ query, weight: 1.0, reason: "Original query" }];
+    return { queries: fallback, cached: false };
   }
-}
-
-export async function expandQueryWithCacheInfo(query: string, model: string = "gemini-flash"): Promise<{ queries: ExpandedQuery[]; cached: boolean }> {
-  const cached = getCachedExpansion(query);
-  if (cached) {
-    return { queries: cached, cached: true };
-  }
-  const queries = await expandQuery(query, model);
-  return { queries, cached: false };
 }

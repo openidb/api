@@ -1,6 +1,6 @@
 import { Hono } from "hono";
 import { prisma } from "../db";
-import { generateSunnahUrl } from "../utils/source-urls";
+import { generateSunnahUrl, SOURCES } from "../utils/source-urls";
 import { parsePagination } from "../utils/pagination";
 
 export const hadithRoutes = new Hono();
@@ -24,7 +24,7 @@ hadithRoutes.get("/collections", async (c) => {
       nameArabic: col.nameArabic,
       booksCount: col._count.books,
     })),
-    _sources: [{ name: "sunnah.com", url: "https://sunnah.com", type: "scrape" }],
+    _sources: SOURCES.sunnah,
   });
 });
 
@@ -65,7 +65,7 @@ hadithRoutes.get("/collections/:slug", async (c) => {
         hadithCount: book._count.hadiths,
       })),
     },
-    _sources: [{ name: "sunnah.com", url: "https://sunnah.com", type: "scrape" }],
+    _sources: SOURCES.sunnah,
   });
 });
 
@@ -115,7 +115,7 @@ hadithRoutes.get("/collections/:slug/books/:bookNumber", async (c) => {
     total,
     limit,
     offset,
-    _sources: [{ name: "sunnah.com", url: "https://sunnah.com", type: "scrape" }],
+    _sources: SOURCES.sunnah,
   });
 });
 
@@ -155,6 +155,6 @@ hadithRoutes.get("/collections/:slug/:number", async (c) => {
       ...hadith,
       sunnahUrl: generateSunnahUrl(slug, hadith.hadithNumber, hadith.book.bookNumber),
     },
-    _sources: [{ name: "sunnah.com", url: "https://sunnah.com", type: "scrape" }],
+    _sources: SOURCES.sunnah,
   });
 });

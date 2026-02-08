@@ -1,4 +1,5 @@
 import { prisma } from "../../db";
+import { startTimer } from "../../utils/timing";
 import { getEmbeddingModelName } from "../../embeddings";
 import {
   searchEntities,
@@ -38,9 +39,9 @@ export async function startGraphSearch(
   const emptyGraphResult: GraphSearchResult = { entities: [], allSourceRefs: [], timingMs: 0 };
   if (!includeGraph) return emptyGraphResult;
 
-  const _graphStart = Date.now();
+  const graphTimer = startTimer();
   return searchEntities(normalizeArabicText(query))
-    .then(res => { timingRef.graph = Date.now() - _graphStart; return res; })
+    .then(res => { timingRef.graph = graphTimer(); return res; })
     .catch(() => emptyGraphResult);
 }
 
@@ -54,7 +55,7 @@ export async function resolveGraphContext(
   }
 
   try {
-    const _graphResolveStart = Date.now();
+    const graphResolveTimer = startTimer();
     const [resolvedSources, resolvedMentions] = await Promise.all([
       resolveSources(graphResult.allSourceRefs),
       resolveGraphMentions(graphResult.entities),
@@ -85,7 +86,7 @@ export async function resolveGraphContext(
     const graphContext: GraphContext = {
       entities: contextEntities,
       coverage: "partial",
-      timingMs: graphResult.timingMs + (Date.now() - _graphResolveStart),
+      timingMs: graphResult.timingMs + graphResolveTimer(),
     };
 
     // Graph confirmation boost for ayahs
@@ -143,7 +144,7 @@ export async function fetchBookDetails(
 
   // Fetch book details
   const bookIds = [...new Set(rankedResults.map((r) => r.bookId))];
-  const _bookMetaStart = Date.now();
+  const bookMetaTimer = startTimer();
   const booksRaw = await prisma.book.findMany({
     where: { id: { in: bookIds } },
     select: {
@@ -166,7 +167,7 @@ export async function fetchBookDetails(
         : {}),
     },
   });
-  const bookMetadataTime = Date.now() - _bookMetaStart;
+  const bookMetadataTime = bookMetaTimer();
 
   const books = booksRaw.map((book) => {
     const { titleTranslations, ...rest } = book as typeof book & {

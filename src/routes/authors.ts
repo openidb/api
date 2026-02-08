@@ -1,6 +1,7 @@
 import { Hono } from "hono";
 import { prisma } from "../db";
 import { parsePagination } from "../utils/pagination";
+import { SOURCES } from "../utils/source-urls";
 
 export const authorsRoutes = new Hono();
 
@@ -47,7 +48,7 @@ authorsRoutes.get("/", async (c) => {
     total,
     limit,
     offset,
-    _sources: [{ name: "Maktaba Shamela", url: "https://shamela.ws", type: "backup" }],
+    _sources: SOURCES.shamela,
   });
 });
 
@@ -88,6 +89,6 @@ authorsRoutes.get("/:id", async (c) => {
 
   return c.json({
     author,
-    _sources: [{ name: "Maktaba Shamela", url: "https://shamela.ws", type: "backup" }],
+    _sources: SOURCES.shamela,
   });
 });

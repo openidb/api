@@ -17,8 +17,8 @@ import {
   keywordSearchHadithsES,
 } from "../../search/elasticsearch-search";
 import { generateShamelaPageUrl, generateQuranUrl } from "../../utils/source-urls";
-import { MIN_CHARS_FOR_SEMANTIC, EXCLUDED_BOOK_IDS } from "./config";
-import { hasQuotedPhrases, getDynamicSimilarityThreshold } from "./query-utils";
+import { EXCLUDED_BOOK_IDS, AUTHOR_SCORE_THRESHOLD, DEFAULT_AYAH_SIMILARITY_CUTOFF, FETCH_LIMIT_CAP, AYAH_PRE_RERANK_CAP, HADITH_PRE_RERANK_CAP } from "./config";
+import { shouldSkipSemanticSearch, getDynamicSimilarityThreshold } from "./query-utils";
 import { mergeWithRRFGeneric } from "./fusion";
 import { rerank } from "./rerankers";
 import { formatAyahForReranking, formatHadithForReranking } from "./rerankers";
@@ -46,16 +46,11 @@ export async function semanticSearch(
   collection: string = QDRANT_COLLECTION,
   embeddingModel: EmbeddingModel = "gemini"
 ): Promise<RankedResult[]> {
-  if (hasQuotedPhrases(query)) {
+  if (shouldSkipSemanticSearch(query)) {
     return [];
   }
 
   const normalizedQuery = normalizeArabicText(query);
-
-  if (normalizedQuery.replace(/\s/g, '').length < MIN_CHARS_FOR_SEMANTIC) {
-    return [];
-  }
-
   const effectiveCutoff = getDynamicSimilarityThreshold(query, similarityCutoff);
   const queryEmbedding = precomputedEmbedding ?? await generateEmbedding(normalizedQuery, embeddingModel);
 
@@ -110,7 +105,7 @@ export async function searchAuthors(query: string, limit: number = 5): Promise<A
       with_payload: {
         include: ["authorId", "nameArabic", "nameLatin", "deathDateHijri", "deathDateGregorian", "booksCount"],
       },
-      score_threshold: 0.3,
+      score_threshold: AUTHOR_SCORE_THRESHOLD,
     });
 
     if (searchResults.length > 0) {
@@ -177,7 +172,7 @@ export async function searchAuthors(query: string, limit: number = 5): Promise<A
 export async function searchAyahsSemantic(
   query: string,
   limit: number = 10,
-  similarityCutoff: number = 0.28,
+  similarityCutoff: number = DEFAULT_AYAH_SIMILARITY_CUTOFF,
   precomputedEmbedding?: number[],
   quranCollectionOverride?: string,
   embeddingModel: EmbeddingModel = "gemini"
@@ -191,16 +186,11 @@ export async function searchAyahsSemantic(
   };
 
   try {
-    if (hasQuotedPhrases(query)) {
+    if (shouldSkipSemanticSearch(query)) {
       return { results: [], meta: defaultMeta };
     }
 
     const normalizedQuery = normalizeArabicText(query);
-
-    if (normalizedQuery.replace(/\s/g, '').length < MIN_CHARS_FOR_SEMANTIC) {
-      return { results: [], meta: defaultMeta };
-    }
-
     const effectiveCutoff = getDynamicSimilarityThreshold(query, similarityCutoff);
     const queryEmbedding = precomputedEmbedding ?? await generateEmbedding(normalizedQuery, embeddingModel);
 
@@ -254,6 +244,43 @@ export async function searchAyahsSemantic(
 }
 
 /**
+ * Generic hybrid search: parallel semantic+keyword → RRF merge → slice → rerank → map scores
+ */
+async function hybridSearchWithRerank<T extends { semanticRank?: number; keywordRank?: number; semanticScore?: number; score?: number; tsRank?: number; bm25Score?: number }>(opts: {
+  query: string;
+  limit: number;
+  reranker: RerankerType;
+  preRerankLimit: number;
+  postRerankLimit: number;
+  preRerankCap: number;
+  semanticSearch: (fetchLimit: number) => Promise<T[]>;
+  keywordSearch: (fetchLimit: number) => Promise<T[]>;
+  getKey: (item: T) => string;
+  formatForReranking: (item: T) => string;
+}) {
+  const fetchLimit = Math.min(opts.preRerankLimit, FETCH_LIMIT_CAP);
+
+  const [semanticResults, keywordResults] = await Promise.all([
+    opts.semanticSearch(fetchLimit).catch(() => [] as T[]),
+    opts.keywordSearch(fetchLimit).catch(() => [] as T[]),
+  ]);
+
+  const merged = mergeWithRRFGeneric(semanticResults, keywordResults, opts.getKey, opts.query);
+  const candidates = merged.slice(0, Math.min(opts.preRerankLimit, opts.preRerankCap));
+  const finalLimit = Math.min(opts.postRerankLimit, opts.limit);
+
+  const { results: finalResults } = await rerank(
+    opts.query, candidates, opts.formatForReranking, finalLimit, opts.reranker
+  );
+
+  return finalResults.map((result, index) => ({
+    ...result,
+    score: result.fusedScore ?? result.semanticScore ?? result.rrfScore,
+    rank: index + 1,
+  }));
+}
+
+/**
  * Hybrid search for Quran ayahs using RRF fusion + reranking
  */
 export async function searchAyahsHybrid(
@@ -262,44 +289,19 @@ export async function searchAyahsHybrid(
   options: { reranker?: RerankerType; preRerankLimit?: number; postRerankLimit?: number; similarityCutoff?: number; fuzzyFallback?: boolean; precomputedEmbedding?: number[]; quranCollection?: string; embeddingModel?: EmbeddingModel } = {}
 ): Promise<AyahResult[]> {
   const { reranker = "none", preRerankLimit = 60, postRerankLimit = limit, similarityCutoff = 0.6, fuzzyFallback = true, precomputedEmbedding, quranCollection, embeddingModel = "gemini" } = options;
-
-  const fetchLimit = Math.min(preRerankLimit, 100);
   const collectionToUse = quranCollection || QDRANT_QURAN_COLLECTION;
   const defaultMeta: AyahSearchMeta = { collection: collectionToUse, usedFallback: false, embeddingTechnique: "metadata-translation" };
 
-  const [semanticSearchResult, keywordResults] = await Promise.all([
-    searchAyahsSemantic(query, fetchLimit, similarityCutoff, precomputedEmbedding, quranCollection, embeddingModel).catch(() => ({ results: [] as AyahRankedResult[], meta: defaultMeta })),
-    keywordSearchAyahsES(query, fetchLimit, { fuzzyFallback }).catch(() => []),
-  ]);
-
-  const merged = mergeWithRRFGeneric(
-    semanticSearchResult.results,
-    keywordResults,
-    (a) => `${a.surahNumber}-${a.ayahNumber}`,
-    query
-  );
-
-  const candidates = merged.slice(0, Math.min(preRerankLimit, 60));
-  const finalLimit = Math.min(postRerankLimit, limit);
-
-  const { results: finalResults } = await rerank(
-    query,
-    candidates,
-    (a) => formatAyahForReranking(a),
-    finalLimit,
-    reranker
-  );
-
-  return finalResults.map((result, index) => {
-    const r = result as typeof result & { fusedScore?: number; semanticScore?: number };
-    return {
-      ...result,
-      score: r.fusedScore ?? r.semanticScore ?? result.rrfScore,
-      fusedScore: r.fusedScore,
-      semanticScore: r.semanticScore,
-      rank: index + 1,
-    };
-  }) as AyahResult[];
+  return hybridSearchWithRerank({
+    query, limit, reranker, preRerankLimit, postRerankLimit, preRerankCap: AYAH_PRE_RERANK_CAP,
+    semanticSearch: (fetchLimit) =>
+      searchAyahsSemantic(query, fetchLimit, similarityCutoff, precomputedEmbedding, quranCollection, embeddingModel)
+        .then(r => r.results)
+        .catch(() => [] as AyahRankedResult[]),
+    keywordSearch: (fetchLimit) => keywordSearchAyahsES(query, fetchLimit, { fuzzyFallback }),
+    getKey: (a) => `${a.surahNumber}-${a.ayahNumber}`,
+    formatForReranking: (a) => formatAyahForReranking(a),
+  }) as Promise<AyahResult[]>;
 }
 
 /**
@@ -314,16 +316,11 @@ export async function searchHadithsSemantic(
   embeddingModel: EmbeddingModel = "gemini"
 ): Promise<HadithRankedResult[]> {
   try {
-    if (hasQuotedPhrases(query)) {
+    if (shouldSkipSemanticSearch(query)) {
       return [];
     }
 
     const normalizedQuery = normalizeArabicText(query);
-
-    if (normalizedQuery.replace(/\s/g, '').length < MIN_CHARS_FOR_SEMANTIC) {
-      return [];
-    }
-
     const effectiveCutoff = getDynamicSimilarityThreshold(query, similarityCutoff);
     const queryEmbedding = precomputedEmbedding ?? await generateEmbedding(normalizedQuery, embeddingModel);
 
@@ -426,39 +423,12 @@ export async function searchHadithsHybrid(
 ): Promise<HadithResult[]> {
   const { reranker = "none", preRerankLimit = 60, postRerankLimit = limit, similarityCutoff = 0.6, fuzzyFallback = true, precomputedEmbedding, hadithCollection, embeddingModel = "gemini" } = options;
 
-  const fetchLimit = Math.min(preRerankLimit, 100);
-
-  const [semanticResults, keywordResults] = await Promise.all([
-    searchHadithsSemantic(query, fetchLimit, similarityCutoff, precomputedEmbedding, hadithCollection, embeddingModel).catch(() => []),
-    keywordSearchHadithsES(query, fetchLimit, { fuzzyFallback }).catch(() => []),
-  ]);
-
-  const merged = mergeWithRRFGeneric(
-    semanticResults,
-    keywordResults,
-    (h) => `${h.collectionSlug}-${h.hadithNumber}`,
-    query
-  );
-
-  const candidates = merged.slice(0, Math.min(preRerankLimit, 75));
-  const finalLimit = Math.min(postRerankLimit, limit);
-
-  const { results: finalResults } = await rerank(
-    query,
-    candidates,
-    (h) => formatHadithForReranking(h),
-    finalLimit,
-    reranker
-  );
-
-  return finalResults.map((result, index) => {
-    const r = result as typeof result & { fusedScore?: number; semanticScore?: number };
-    return {
-      ...result,
-      score: r.fusedScore ?? r.semanticScore ?? result.rrfScore,
-      fusedScore: r.fusedScore,
-      semanticScore: r.semanticScore,
-      rank: index + 1,
-    };
+  return hybridSearchWithRerank({
+    query, limit, reranker, preRerankLimit, postRerankLimit, preRerankCap: HADITH_PRE_RERANK_CAP,
+    semanticSearch: (fetchLimit) =>
+      searchHadithsSemantic(query, fetchLimit, similarityCutoff, precomputedEmbedding, hadithCollection, embeddingModel),
+    keywordSearch: (fetchLimit) => keywordSearchHadithsES(query, fetchLimit, { fuzzyFallback }),
+    getKey: (h) => `${h.collectionSlug}-${h.hadithNumber}`,
+    formatForReranking: (h) => formatHadithForReranking(h),
   });
 }

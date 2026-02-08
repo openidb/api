@@ -1,4 +1,5 @@
 import { Hono } from "hono";
+import { startTimer } from "../../utils/timing";
 import { QDRANT_QURAN_COLLECTION } from "../../qdrant";
 import { searchAuthors } from "./engines";
 import { parseSearchParams } from "./params";
@@ -72,16 +73,16 @@ searchRoutes.get("/", async (c) => {
 
     // Wait for graph + author search
     const graphResult = await graphPromise;
-    const _authorSearchStart = Date.now();
+    const authorTimer = startTimer();
     const authors = await authorsPromise;
-    _timing.authorSearch = Date.now() - _authorSearchStart;
+    _timing.authorSearch = authorTimer();
 
     // Fetch translations
-    const _translationsStart = Date.now();
+    const translationsTimer = startTimer();
     const translated = await fetchAndMergeTranslations(params, rankedResults, ayahsRaw, hadiths);
     rankedResults = translated.rankedResults;
     hadiths = translated.hadiths;
-    _timing.translations = Date.now() - _translationsStart;
+    _timing.translations = translationsTimer();
 
     // Limit final results
     rankedResults = rankedResults.slice(0, params.limit);

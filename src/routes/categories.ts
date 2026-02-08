@@ -1,6 +1,7 @@
 import { Hono } from "hono";
 import { prisma } from "../db";
 import { parsePagination } from "../utils/pagination";
+import { SOURCES } from "../utils/source-urls";
 
 export const categoriesRoutes = new Hono();
 
@@ -30,7 +31,7 @@ categoriesRoutes.get("/", async (c) => {
         parentId: cat.parentId,
         booksCount: cat._count.books,
       })),
-      _sources: [{ name: "Maktaba Shamela", url: "https://shamela.ws", type: "backup" }],
+      _sources: SOURCES.shamela,
     });
   }
 
@@ -69,7 +70,7 @@ categoriesRoutes.get("/", async (c) => {
 
   return c.json({
     categories: roots,
-    _sources: [{ name: "Maktaba Shamela", url: "https://shamela.ws", type: "backup" }],
+    _sources: SOURCES.shamela,
   });
 });
 
@@ -120,6 +121,6 @@ categoriesRoutes.get("/:id", async (c) => {
     total,
     limit,
     offset,
-    _sources: [{ name: "Maktaba Shamela", url: "https://shamela.ws", type: "backup" }],
+    _sources: SOURCES.shamela,
   });
 });

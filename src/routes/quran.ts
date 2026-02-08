@@ -1,6 +1,6 @@
 import { Hono } from "hono";
 import { prisma } from "../db";
-import { generateQuranUrl, generateTafsirSourceUrl, generateTranslationSourceUrl } from "../utils/source-urls";
+import { generateQuranUrl, generateTafsirSourceUrl, generateTranslationSourceUrl, SOURCES } from "../utils/source-urls";
 import { parsePagination } from "../utils/pagination";
 
 export const quranRoutes = new Hono();
@@ -19,7 +19,7 @@ quranRoutes.get("/surahs", async (c) => {
   });
   return c.json({
     surahs,
-    _sources: [{ name: "Al Quran Cloud API", url: "https://api.alquran.cloud", type: "api" }],
+    _sources: SOURCES.quranCloud,
   });
 });
 
@@ -58,7 +58,7 @@ quranRoutes.get("/surahs/:number", async (c) => {
         quranUrl: generateQuranUrl(number, a.ayahNumber),
       })),
     },
-    _sources: [{ name: "Al Quran Cloud API", url: "https://api.alquran.cloud", type: "api" }],
+    _sources: SOURCES.quranCloud,
   });
 });
 
@@ -108,7 +108,7 @@ quranRoutes.get("/ayahs", async (c) => {
     total,
     limit,
     offset,
-    _sources: [{ name: "Al Quran Cloud API", url: "https://api.alquran.cloud", type: "api" }],
+    _sources: SOURCES.quranCloud,
   });
 });
 
@@ -133,10 +133,7 @@ quranRoutes.get("/tafsir/:surah/:ayah", async (c) => {
       ...t,
       sourceUrl: generateTafsirSourceUrl(t.source, surahNumber, ayahNumber),
     })),
-    _sources: [
-      { name: "quran-tafseer.com (Jalalayn)", url: "http://api.quran-tafseer.com", type: "api" },
-      { name: "spa5k/tafsir_api (Ibn Kathir)", url: "https://github.com/spa5k/tafsir_api", type: "api" },
-    ],
+    _sources: SOURCES.tafsir,
   });
 });
 
@@ -161,6 +158,6 @@ quranRoutes.get("/translations/:surah/:ayah", async (c) => {
       ...t,
       sourceUrl: generateTranslationSourceUrl(t.editionId),
     })),
-    _sources: [{ name: "fawazahmed0/quran-api", url: "https://github.com/fawazahmed0/quran-api", type: "api" }],
+    _sources: SOURCES.quranTranslation,
   });
 });

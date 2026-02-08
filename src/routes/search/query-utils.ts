@@ -1,4 +1,5 @@
 import { normalizeArabicText } from "../../embeddings";
+import { MIN_CHARS_FOR_SEMANTIC } from "./config";
 import type { ParsedQuery, SearchStrategy } from "./types";
 
 /**
@@ -67,6 +68,16 @@ export function parseSearchQuery(query: string): ParsedQuery {
 export function hasQuotedPhrases(query: string): boolean {
   const quoteRegex = /["\u00AB\u00BB\u201E\u201C\u201D](.*?)["\u00AB\u00BB\u201E\u201C\u201D]/;
   return quoteRegex.test(query);
+}
+
+/**
+ * Check if semantic search should be skipped for this query
+ * (quoted phrases request exact match; too-short queries produce noise)
+ */
+export function shouldSkipSemanticSearch(query: string): boolean {
+  if (hasQuotedPhrases(query)) return true;
+  const normalized = normalizeArabicText(query);
+  return normalized.replace(/\s/g, '').length < MIN_CHARS_FOR_SEMANTIC;
 }
 
 /**

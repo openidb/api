@@ -5,6 +5,17 @@
  * Used by both API routes (for attribution) and pipelines (for embedding payloads).
  */
 
+export const SOURCES = {
+  shamela: [{ name: "Maktaba Shamela", url: "https://shamela.ws", type: "backup" }],
+  sunnah: [{ name: "sunnah.com", url: "https://sunnah.com", type: "scrape" }],
+  quranCloud: [{ name: "Al Quran Cloud API", url: "https://api.alquran.cloud", type: "api" }],
+  tafsir: [
+    { name: "quran-tafseer.com (Jalalayn)", url: "http://api.quran-tafseer.com", type: "api" },
+    { name: "spa5k/tafsir_api (Ibn Kathir)", url: "https://github.com/spa5k/tafsir_api", type: "api" },
+  ],
+  quranTranslation: [{ name: "fawazahmed0/quran-api", url: "https://github.com/fawazahmed0/quran-api", type: "api" }],
+} as const;
+
 // Collections that use /collection/book/hadith format instead of /collection:hadith
 const BOOK_PATH_COLLECTIONS = new Set(["malik", "bulugh"]);
 

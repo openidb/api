@@ -34,3 +34,23 @@ export const STANDARD_FETCH_LIMIT = 50;
 
 // Tolerance for comparing floating-point fused scores
 export const FLOAT_TOLERANCE = 0.001;
+
+// Author search score threshold for Qdrant results
+export const AUTHOR_SCORE_THRESHOLD = 0.3;
+
+// Text truncation limits for reranking prompts
+export const RERANKER_TEXT_LIMIT = 800;
+export const UNIFIED_RERANKER_TEXT_LIMIT = 600;
+
+// Unified rerank timeout
+export const UNIFIED_RERANK_TIMEOUT_MS = 25000;
+
+// Hybrid search pre-rerank caps
+export const AYAH_PRE_RERANK_CAP = 60;
+export const HADITH_PRE_RERANK_CAP = 75;
+
+// Fetch limit cap for hybrid search
+export const FETCH_LIMIT_CAP = 100;
+
+// Default ayah similarity cutoff for semantic search
+export const DEFAULT_AYAH_SIMILARITY_CUTOFF = 0.28;
