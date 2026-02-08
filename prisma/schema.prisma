@@ -1,0 +1,382 @@
+// OpenIslamicDB - PostgreSQL Schema
+// Source-of-truth database for Islamic texts: books, Quran, hadith
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../node_modules/.prisma/client"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ============================================================================
+// CORE ENTITIES
+// ============================================================================
+
+model Author {
+  id        String   @id @map("id")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  // Names
+  nameArabic String  @map("name_arabic")
+  nameLatin  String  @unique @map("name_latin")
+  kunya      String? // e.g., "أبو الفرج"
+  nasab      String? // Genealogy
+  nisba      String? // Place/tribe attribution
+  laqab      String? // Title/epithet
+
+  // Dates
+  birthDateHijri      String? @map("birth_date_hijri")
+  deathDateHijri      String? @map("death_date_hijri")
+  birthDateGregorian  String? @map("birth_date_gregorian")
+  deathDateGregorian  String? @map("death_date_gregorian")
+
+  // Biography
+  biography       String? @db.Text
+  biographySource String? @map("biography_source")
+
+  // Relationships
+  books       Book[]
+  otherWorks  AuthorWork[]
+
+  @@map("authors")
+}
+
+model Category {
+  id        Int      @id @default(autoincrement())
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  code String? @unique @map("code")
+
+  // Names
+  nameArabic  String  @unique @map("name_arabic")
+  nameEnglish String? @map("name_english")
+
+  // Hierarchy
+  parentId Int?      @map("parent_id")
+  parent   Category? @relation("CategoryHierarchy", fields: [parentId], references: [id])
+  children Category[] @relation("CategoryHierarchy")
+
+  // Relationships
+  books Book[]
+
+  @@index([parentId])
+  @@map("categories")
+}
+
+model Publisher {
+  id        Int      @id @default(autoincrement())
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  name     String  @unique @map("name")
+  location String? @map("location")
+
+  // Relationships
+  books Book[]
+
+  @@map("publishers")
+}
+
+model Editor {
+  id        Int      @id @default(autoincrement())
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  name String @unique @map("name")
+
+  // Relationships
+  books Book[]
+
+  @@map("editors")
+}
+
+model Book {
+  id        String   @id @map("id")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  // Titles
+  titleArabic String @map("title_arabic")
+  titleLatin  String @map("title_latin")
+
+  // Author Relationship
+  authorId String @map("author_id")
+  author   Author @relation(fields: [authorId], references: [id], onDelete: Restrict)
+
+  // Category Relationship
+  categoryId Int?      @map("category_id")
+  category   Category? @relation(fields: [categoryId], references: [id])
+
+  // Publisher Relationship
+  publisherId Int?       @map("publisher_id")
+  publisher   Publisher? @relation(fields: [publisherId], references: [id])
+
+  // Editor Relationship
+  editorId Int?    @map("editor_id")
+  editor   Editor? @relation(fields: [editorId], references: [id])
+
+  // Publication Information
+  publicationYearHijri     String? @map("publication_year_hijri")
+  publicationYearGregorian String? @map("publication_year_gregorian")
+  publicationEdition       String? @map("publication_edition")
+  publicationLocation      String? @map("publication_location")
+  isbn                     String?
+
+  // Structure
+  totalVolumes       Int     @default(1) @map("total_volumes")
+  totalPages         Int?    @map("total_pages")
+  pageAlignmentNote  String? @map("page_alignment_note") // "موافق للمطبوع"
+
+  // Editorial Information
+  verificationStatus String? @map("verification_status") // "محقق" or "غير محقق"
+  editorialType      String? @map("editorial_type") // "رسالة ماجستير", "رسالة دكتوراه", "بحث"
+  institution        String? // University
+  supervisor         String?
+
+  // Content
+  descriptionHtml String? @db.Text @map("description_html")
+  summary         String? @db.Text
+
+  // File Reference
+  filename String // EPUB filename
+
+  // Time Period (for filtering/grouping)
+  timePeriod String? @map("time_period")
+
+  // Relationships
+  keywords          BookKeyword[]
+  pages             Page[]
+  titleTranslations BookTitleTranslation[]
+
+  @@index([authorId])
+  @@index([categoryId])
+  @@map("books")
+}
+
+// ============================================================================
+// JUNCTION TABLES
+// ============================================================================
+
+model BookKeyword {
+  bookId  String @map("book_id")
+  keyword String
+
+  book Book @relation(fields: [bookId], references: [id], onDelete: Cascade)
+
+  @@id([bookId, keyword])
+  @@map("book_keywords")
+}
+
+model AuthorWork {
+  id        Int      @id @default(autoincrement())
+  createdAt DateTime @default(now()) @map("created_at")
+
+  authorId       String  @map("author_id")
+  bookId         String  @map("book_id")
+  title          String
+  isInCatalog    Boolean @default(false) @map("is_in_catalog")
+
+  author Author @relation(fields: [authorId], references: [id], onDelete: Cascade)
+
+  @@index([authorId])
+  @@index([bookId])
+  @@map("author_works")
+}
+
+// ============================================================================
+// CONTENT TABLES
+// ============================================================================
+
+model Page {
+  id        Int      @id @default(autoincrement())
+  createdAt DateTime @default(now()) @map("created_at")
+
+  bookId       String @map("book_id")
+  pageNumber   Int    @map("page_number") // Sequential page number
+  volumeNumber Int    @default(1) @map("volume_number")
+
+  // Page Identification
+  urlPageIndex      String? @map("url_page_index") // Could be 'i' for overview, or integer
+  printedPageNumber Int?    @map("printed_page_number") // Page number as printed in book
+
+  // Content
+  contentPlain String @db.Text @map("content_plain")
+  contentHtml  String @db.Text @map("content_html")
+
+  // Formatting Hints
+  hasPoetry   Boolean @default(false) @map("has_poetry")
+  hasHadith   Boolean @default(false) @map("has_hadith")
+  hasQuran    Boolean @default(false) @map("has_quran")
+  hasDialogue Boolean @default(false) @map("has_dialogue")
+
+  // References
+  sourceUrl String? @map("source_url")
+  pdfUrl    String? @map("pdf_url")
+
+  // Relationships
+  book         Book              @relation(fields: [bookId], references: [id], onDelete: Cascade)
+  translations PageTranslation[]
+
+  @@unique([bookId, pageNumber])
+  @@index([bookId, pageNumber])
+  @@map("pages")
+}
+
+// ============================================================================
+// TRANSLATION TABLES
+// ============================================================================
+
+model BookTitleTranslation {
+  id       Int    @id @default(autoincrement())
+  bookId   String @map("book_id")
+  language String // "en", "fr", "id", etc.
+  title    String @db.Text
+
+  book Book @relation(fields: [bookId], references: [id], onDelete: Cascade)
+
+  @@unique([bookId, language])
+  @@index([bookId])
+  @@index([language])
+  @@map("book_title_translations")
+}
+
+model PageTranslation {
+  id        Int      @id @default(autoincrement())
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  pageId     Int    @map("page_id")
+  language   String // "en", "fr", "id", "ur", etc.
+  model      String // "gemini-flash", "gpt-oss-120b" - stored for reference but not part of unique key
+  paragraphs Json   // [{index: 0, translation: "..."}, ...]
+
+  page Page @relation(fields: [pageId], references: [id], onDelete: Cascade)
+
+  @@unique([pageId, language])
+  @@index([pageId])
+  @@map("page_translations")
+}
+
+// ============================================================================
+// QURAN - Separate from books system
+// ============================================================================
+
+model Surah {
+  id             Int    @id @default(autoincrement())
+  number         Int    @unique
+  nameArabic     String @map("name_arabic")
+  nameEnglish    String @map("name_english")
+  revelationType String @map("revelation_type") // "Meccan" | "Medinan"
+  ayahCount      Int    @map("ayah_count")
+
+  ayahs Ayah[]
+
+  @@map("surahs")
+}
+
+model Ayah {
+  id          Int    @id @default(autoincrement())
+  surahId     Int    @map("surah_id")
+  ayahNumber  Int    @map("ayah_number")
+  textUthmani String @db.Text @map("text_uthmani")
+  textPlain   String @db.Text @map("text_plain") // For search
+  juzNumber   Int    @map("juz_number")
+  pageNumber  Int    @map("page_number") // Standard mushaf page
+
+  surah Surah @relation(fields: [surahId], references: [id])
+
+  @@unique([surahId, ayahNumber])
+  @@index([surahId])
+  @@map("ayahs")
+}
+
+model AyahTranslation {
+  id          Int    @id @default(autoincrement())
+  surahNumber Int    @map("surah_number")
+  ayahNumber  Int    @map("ayah_number")
+  language    String // "en", "ur", "fr", "id", etc.
+  editionId   String @map("edition_id") // "eng-mustafakhattaba", etc.
+  text        String @db.Text
+
+  @@unique([surahNumber, ayahNumber, language])
+  @@index([surahNumber, ayahNumber])
+  @@index([language])
+  @@map("ayah_translations")
+}
+
+model AyahTafsir {
+  id          Int    @id @default(autoincrement())
+  surahNumber Int    @map("surah_number")
+  ayahNumber  Int    @map("ayah_number")
+  source      String // "jalalayn", "saadi", "ibn_kathir", etc.
+  text        String @db.Text
+
+  @@unique([surahNumber, ayahNumber, source])
+  @@index([surahNumber, ayahNumber])
+  @@index([source])
+  @@map("ayah_tafsirs")
+}
+
+// ============================================================================
+// HADITH - Sunnah.com integration
+// ============================================================================
+
+model HadithCollection {
+  id          Int     @id @default(autoincrement())
+  slug        String  @unique  // "bukhari", "muslim", etc.
+  nameEnglish String  @map("name_english")
+  nameArabic  String  @map("name_arabic")
+
+  books HadithBook[]
+
+  @@map("hadith_collections")
+}
+
+model HadithBook {
+  id           Int              @id @default(autoincrement())
+  collectionId Int              @map("collection_id")
+  bookNumber   Int              @map("book_number")
+  nameEnglish  String           @map("name_english")
+  nameArabic   String           @map("name_arabic")
+
+  collection HadithCollection @relation(fields: [collectionId], references: [id])
+  hadiths    Hadith[]
+
+  @@unique([collectionId, bookNumber])
+  @@index([collectionId])
+  @@map("hadith_books")
+}
+
+model Hadith {
+  id               Int         @id @default(autoincrement())
+  bookId           Int         @map("book_id")
+  hadithNumber     String      @map("hadith_number")  // String for variants like "8a"
+  textArabic       String      @db.Text @map("text_arabic")
+  textPlain        String      @db.Text @map("text_plain")  // Diacritics removed for search
+  chapterArabic    String?     @map("chapter_arabic")
+  chapterEnglish   String?     @map("chapter_english")
+  isChainVariation Boolean     @default(false) @map("is_chain_variation")  // True for hadiths that are only chain variations (no matn)
+
+  book HadithBook @relation(fields: [bookId], references: [id])
+
+  @@unique([bookId, hadithNumber])
+  @@index([bookId])
+  @@map("hadiths")
+}
+
+model HadithTranslation {
+  id           Int    @id @default(autoincrement())
+  bookId       Int    @map("book_id")
+  hadithNumber String @map("hadith_number")
+  language     String // "en" for now, expandable later
+  text         String @db.Text
+
+  @@unique([bookId, hadithNumber, language])
+  @@index([bookId, hadithNumber])
+  @@index([language])
+  @@map("hadith_translations")
+}
