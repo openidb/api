@@ -5,26 +5,13 @@ import type {
   HadithRankedResult,
   UnifiedRefineResult,
 } from "./types";
+import { callOpenRouter } from "../../lib/openrouter";
 
 const RERANKER_MODELS: Record<string, string> = {
   "gpt-oss-20b": "openai/gpt-oss-20b",
   "gpt-oss-120b": "openai/gpt-oss-120b",
   "gemini-flash": "google/gemini-3-flash-preview",
 };
-
-async function fetchWithTimeout(
-  url: string,
-  options: RequestInit,
-  timeoutMs: number = 15000
-): Promise<Response> {
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
-  try {
-    return await fetch(url, { ...options, signal: controller.signal });
-  } finally {
-    clearTimeout(timeoutId);
-  }
-}
 
 export function formatAyahForReranking(ayah: AyahRankedResult): string {
   const range = ayah.ayahEnd ? `${ayah.ayahNumber}-${ayah.ayahEnd}` : String(ayah.ayahNumber);
@@ -121,7 +108,7 @@ async function rerankWithLLM<T>(
   model: string,
   timeoutMs: number
 ): Promise<{ results: T[]; timedOut: boolean }> {
-  if (results.length === 0 || !process.env.OPENROUTER_API_KEY) {
+  if (results.length === 0) {
     return { results: results.slice(0, topN), timedOut: false };
   }
 
@@ -132,27 +119,18 @@ async function rerankWithLLM<T>(
 
     const prompt = buildRerankerPrompt(query, docsText);
 
-    const response = await fetchWithTimeout("https://openrouter.ai/api/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Authorization": `Bearer ${process.env.OPENROUTER_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model,
-        messages: [{ role: "user", content: prompt }],
-        temperature: 0,
-      }),
-    }, timeoutMs);
+    const result = await callOpenRouter({
+      model,
+      messages: [{ role: "user", content: prompt }],
+      temperature: 0,
+      timeoutMs,
+    });
 
-    if (!response.ok) {
-      throw new Error(`LLM reranking failed: ${response.statusText}`);
+    if (!result) {
+      return { results: results.slice(0, topN), timedOut: false };
     }
 
-    const data = await response.json();
-    const content = data.choices?.[0]?.message?.content || "[]";
-
-    const reranked = parseLLMRanking(content, results, topN);
+    const reranked = parseLLMRanking(result.content, results, topN);
     if (!reranked) {
       console.warn(`[Reranker] ${model} returned invalid format, using original order`);
       return { results: results.slice(0, topN), timedOut: false };
@@ -283,21 +261,14 @@ If no documents are relevant, return an empty array []:
 
     const model = RERANKER_MODELS[reranker] ?? "google/gemini-3-flash-preview";
 
-    const response = await fetchWithTimeout("https://openrouter.ai/api/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Authorization": `Bearer ${process.env.OPENROUTER_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model,
-        messages: [{ role: "user", content: prompt }],
-        temperature: 0,
-      }),
-    }, TIMEOUT_MS);
+    const result = await callOpenRouter({
+      model,
+      messages: [{ role: "user", content: prompt }],
+      temperature: 0,
+      timeoutMs: TIMEOUT_MS,
+    });
 
-    if (!response.ok) {
-      console.warn(`[Unified Refine Rerank] API error: ${response.statusText}`);
+    if (!result) {
       return {
         books: books.slice(0, limits.books),
         ayahs: ayahs.slice(0, limits.ayahs),
@@ -306,8 +277,7 @@ If no documents are relevant, return an empty array []:
       };
     }
 
-    const data = await response.json();
-    const content = data.choices?.[0]?.message?.content || "[]";
+    const content = result.content;
 
     const match = content.match(/\[[\d,\s]*\]/);
     if (!match) {

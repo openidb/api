@@ -42,7 +42,7 @@ import {
   type EmbeddingModel,
 } from "../../src/embeddings";
 import crypto from "crypto";
-import { generateSunnahComUrl } from "../../src/utils/source-urls";
+import { generateSunnahUrl } from "../../src/utils/source-urls";
 
 // Parse command line arguments
 const forceFlag = process.argv.includes("--force");
@@ -668,7 +668,7 @@ async function processHadithBatch(
         textPlain: enrichedTextPlain,
         chapterArabic: hadith.chapterArabic,
         chapterEnglish: hadith.chapterEnglish,
-        sunnahComUrl: generateSunnahComUrl(slug, hadith.hadithNumber, hadith.book.bookNumber),
+        sunnahUrl: generateSunnahUrl(slug, hadith.hadithNumber, hadith.book.bookNumber),
         embeddingTechnique: "metadata-translation",
       },
     };

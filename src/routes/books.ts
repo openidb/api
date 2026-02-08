@@ -1,6 +1,7 @@
 import { Hono } from "hono";
 import { prisma } from "../db";
 import { generateShamelaBookUrl, generateShamelaPageUrl } from "../utils/source-urls";
+import { parsePagination } from "../utils/pagination";
 
 export const booksRoutes = new Hono();
 
@@ -9,11 +10,7 @@ booksRoutes.get("/", async (c) => {
   const search = c.req.query("search");
   const authorId = c.req.query("authorId");
   const categoryId = c.req.query("categoryId");
-  const limitParam = c.req.query("limit");
-  const offsetParam = c.req.query("offset");
-
-  const limit = Math.min(Math.max(parseInt(limitParam || "20", 10), 1), 100);
-  const offset = Math.max(parseInt(offsetParam || "0", 10), 0);
+  const { limit, offset } = parsePagination(c.req.query("limit"), c.req.query("offset"));
 
   const where: Record<string, unknown> = {};
   if (search) {
@@ -113,6 +110,7 @@ booksRoutes.get("/:id", async (c) => {
       ...book,
       shamelaUrl: generateShamelaBookUrl(book.id),
     },
+    _sources: [{ name: "Maktaba Shamela", url: "https://shamela.ws", type: "backup" }],
   });
 });
 
@@ -150,17 +148,14 @@ booksRoutes.get("/:id/pages/:page", async (c) => {
       ...page,
       shamelaUrl: generateShamelaPageUrl(bookId, pageNumber),
     },
+    _sources: [{ name: "Maktaba Shamela", url: "https://shamela.ws", type: "backup" }],
   });
 });
 
 // GET /:id/pages — list pages for a book (metadata only)
 booksRoutes.get("/:id/pages", async (c) => {
   const bookId = c.req.param("id");
-  const limitParam = c.req.query("limit");
-  const offsetParam = c.req.query("offset");
-
-  const limit = Math.min(Math.max(parseInt(limitParam || "50", 10), 1), 200);
-  const offset = Math.max(parseInt(offsetParam || "0", 10), 0);
+  const { limit, offset } = parsePagination(c.req.query("limit"), c.req.query("offset"), 50, 200);
 
   const [pages, total] = await Promise.all([
     prisma.page.findMany({
@@ -178,5 +173,11 @@ booksRoutes.get("/:id/pages", async (c) => {
     prisma.page.count({ where: { bookId } }),
   ]);
 
-  return c.json({ pages, total, limit, offset });
+  return c.json({
+    pages,
+    total,
+    limit,
+    offset,
+    _sources: [{ name: "Maktaba Shamela", url: "https://shamela.ws", type: "backup" }],
+  });
 });

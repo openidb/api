@@ -12,7 +12,7 @@ const BOOK_PATH_COLLECTIONS = new Set(["malik", "bulugh"]);
  * Generate the correct sunnah.com URL for a hadith.
  * Most collections use /collection:hadith format, but some use /collection/book/hadith.
  */
-export function generateSunnahComUrl(
+export function generateSunnahUrl(
   collectionSlug: string,
   hadithNumber: string,
   bookNumber: number
@@ -27,7 +27,7 @@ export function generateSunnahComUrl(
 /**
  * Generate a quran.com URL for a specific ayah.
  */
-export function generateQuranComUrl(surahNumber: number, ayahNumber: number): string {
+export function generateQuranUrl(surahNumber: number, ayahNumber: number): string {
   return `https://quran.com/${surahNumber}?startingVerse=${ayahNumber}`;
 }
 

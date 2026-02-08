@@ -46,7 +46,7 @@ export interface AyahResult {
   translation?: string;
   juzNumber: number;
   pageNumber: number;
-  quranComUrl: string;
+  quranUrl: string;
   isChunk?: boolean;
   wordCount?: number;
 }
@@ -66,7 +66,7 @@ export interface HadithResult {
   text: string;
   chapterArabic: string | null;
   chapterEnglish: string | null;
-  sunnahComUrl: string;
+  sunnahUrl: string;
   translation?: string;
 }
 

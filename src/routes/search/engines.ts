@@ -16,7 +16,7 @@ import {
   keywordSearchAyahsES,
   keywordSearchHadithsES,
 } from "../../search/elasticsearch-search";
-import { generateShamelaPageUrl, generateQuranComUrl } from "../../utils/source-urls";
+import { generateShamelaPageUrl, generateQuranUrl } from "../../utils/source-urls";
 import { MIN_CHARS_FOR_SEMANTIC, EXCLUDED_BOOK_IDS } from "./config";
 import { hasQuotedPhrases, getDynamicSimilarityThreshold } from "./query-utils";
 import { mergeWithRRFGeneric } from "./fusion";
@@ -241,7 +241,7 @@ export async function searchAyahsSemantic(
         text: payload.text,
         juzNumber: payload.juzNumber,
         pageNumber: payload.pageNumber,
-        quranComUrl: generateQuranComUrl(payload.surahNumber, payload.ayahNumber),
+        quranUrl: generateQuranUrl(payload.surahNumber, payload.ayahNumber),
         semanticRank: index + 1,
       };
     });
@@ -354,7 +354,8 @@ export async function searchHadithsSemantic(
       textPlain: string;
       chapterArabic: string | null;
       chapterEnglish: string | null;
-      sunnahComUrl: string;
+      sunnahUrl?: string;
+      sunnahComUrl?: string;
       bookId?: number;
     });
 
@@ -405,7 +406,7 @@ export async function searchHadithsSemantic(
         text: payload.text,
         chapterArabic: payload.chapterArabic,
         chapterEnglish: payload.chapterEnglish,
-        sunnahComUrl: payload.sunnahComUrl.replace(/(\d)[A-Z]+$/, '$1'),
+        sunnahUrl: (payload.sunnahUrl || payload.sunnahComUrl || '').replace(/(\d)[A-Z]+$/, '$1'),
         semanticRank: index + 1,
       };
     });

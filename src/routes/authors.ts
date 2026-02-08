@@ -1,16 +1,13 @@
 import { Hono } from "hono";
 import { prisma } from "../db";
+import { parsePagination } from "../utils/pagination";
 
 export const authorsRoutes = new Hono();
 
 // GET / — list authors (paginated, searchable)
 authorsRoutes.get("/", async (c) => {
   const search = c.req.query("search");
-  const limitParam = c.req.query("limit");
-  const offsetParam = c.req.query("offset");
-
-  const limit = Math.min(Math.max(parseInt(limitParam || "20", 10), 1), 100);
-  const offset = Math.max(parseInt(offsetParam || "0", 10), 0);
+  const { limit, offset } = parsePagination(c.req.query("limit"), c.req.query("offset"));
 
   const where: Record<string, unknown> = {};
   if (search) {
@@ -50,6 +47,7 @@ authorsRoutes.get("/", async (c) => {
     total,
     limit,
     offset,
+    _sources: [{ name: "Maktaba Shamela", url: "https://shamela.ws", type: "backup" }],
   });
 });
 
@@ -88,5 +86,8 @@ authorsRoutes.get("/:id", async (c) => {
     return c.json({ error: "Author not found" }, 404);
   }
 
-  return c.json({ author });
+  return c.json({
+    author,
+    _sources: [{ name: "Maktaba Shamela", url: "https://shamela.ws", type: "backup" }],
+  });
 });

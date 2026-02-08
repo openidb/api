@@ -27,7 +27,7 @@
 import "../env";
 import * as cheerio from "cheerio";
 import { prisma } from "../../src/db";
-import { normalizeArabicText } from "../../src/utils/arabic";
+import { normalizeArabicText } from "../../src/embeddings";
 import * as fs from "fs";
 import * as path from "path";
 

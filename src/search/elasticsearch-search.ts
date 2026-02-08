@@ -12,154 +12,13 @@ import {
   ES_AYAHS_INDEX,
 } from "./elasticsearch";
 import { normalizeArabicText } from "../embeddings";
-import { generateSunnahComUrl, generateQuranComUrl, generateShamelaPageUrl } from "../utils/source-urls";
+import { generateSunnahUrl, generateQuranUrl, generateShamelaPageUrl } from "../utils/source-urls";
+import { isArabicQuery, prepareSearchTerms, parseSearchQuery } from "../routes/search/query-utils";
 import type { QueryDslQueryContainer, SearchHit } from "@elastic/elasticsearch/lib/api/types";
+import type { RankedResult, HadithRankedResult, AyahRankedResult, ParsedQuery } from "../routes/search/types";
 
-export { generateSunnahComUrl };
-
-// ============================================================================
-// Type Definitions (matching route.ts interfaces)
-// ============================================================================
-
-export interface RankedResult {
-  bookId: string;
-  pageNumber: number;
-  volumeNumber: number;
-  textSnippet: string;
-  highlightedSnippet: string;
-  semanticRank?: number;
-  keywordRank?: number;
-  semanticScore?: number;
-  keywordScore?: number;
-  tsRank?: number;
-  bm25Score?: number;
-  fusedScore?: number;
-  urlPageIndex?: string;
-  shamelaUrl?: string;
-}
-
-export interface HadithRankedResult {
-  score: number;
-  semanticScore?: number;
-  rank?: number;
-  bookId: number;
-  collectionSlug: string;
-  collectionNameArabic: string;
-  collectionNameEnglish: string;
-  bookNumber: number;
-  bookNameArabic: string;
-  bookNameEnglish: string;
-  hadithNumber: string;
-  text: string;
-  chapterArabic: string | null;
-  chapterEnglish: string | null;
-  sunnahComUrl: string;
-  translation?: string;
-  semanticRank?: number;
-  keywordRank?: number;
-  tsRank?: number;
-  bm25Score?: number;
-}
-
-export interface AyahRankedResult {
-  score: number;
-  semanticScore?: number;
-  rank?: number;
-  surahNumber: number;
-  ayahNumber: number;
-  ayahEnd?: number;
-  ayahNumbers?: number[];
-  surahNameArabic: string;
-  surahNameEnglish: string;
-  text: string;
-  translation?: string;
-  juzNumber: number;
-  pageNumber: number;
-  quranComUrl: string;
-  isChunk?: boolean;
-  wordCount?: number;
-  semanticRank?: number;
-  keywordRank?: number;
-  tsRank?: number;
-  bm25Score?: number;
-}
-
-interface ParsedQuery {
-  phrases: string[];
-  terms: string[];
-}
-
-// ============================================================================
-// Helper Functions
-// ============================================================================
-
-/**
- * Check if query contains Arabic characters
- */
-function isArabicQuery(query: string): boolean {
-  const arabicPattern = /[\u0600-\u06FF\u0750-\u077F]/;
-  return arabicPattern.test(query);
-}
-
-/**
- * Prepare search terms (normalize and clean)
- */
-function prepareSearchTerms(query: string): string[] {
-  const normalized = normalizeArabicText(query);
-  return normalized
-    .trim()
-    .split(/\s+/)
-    .filter((term) => term.length > 0)
-    .map((term) => term.replace(/[^\u0600-\u06FF\w]/g, ""))
-    .filter((term) => term.length > 0);
-}
-
-/**
- * Parse search query to extract quoted phrases and individual terms
- * Supports regular quotes (""), Arabic quotes (\u00AB\u00BB), and guillemets
- */
-function parseSearchQuery(query: string): ParsedQuery {
-  const phrases: string[] = [];
-  const terms: string[] = [];
-
-  const quoteRegex = /["\u00AB\u00BB\u201E\u201C\u201D](.*?)["\u00AB\u00BB\u201E\u201C\u201D]/g;
-  let match;
-  let lastIndex = 0;
-
-  while ((match = quoteRegex.exec(query)) !== null) {
-    const before = query.slice(lastIndex, match.index).trim();
-    if (before) {
-      terms.push(...prepareSearchTerms(before));
-    }
-
-    const phrase = normalizeArabicText(match[1]).trim();
-    if (phrase && phrase.includes(" ")) {
-      const words = phrase
-        .split(/\s+/)
-        .map((w) => w.replace(/[^\u0600-\u06FF\w]/g, ""))
-        .filter((w) => w.length > 0);
-      if (words.length > 1) {
-        phrases.push(words.join(" "));
-      } else if (words.length === 1) {
-        terms.push(words[0]);
-      }
-    } else if (phrase) {
-      const cleaned = phrase.replace(/[^\u0600-\u06FF\w]/g, "");
-      if (cleaned.length > 0) {
-        terms.push(cleaned);
-      }
-    }
-
-    lastIndex = quoteRegex.lastIndex;
-  }
-
-  const remaining = query.slice(lastIndex).trim();
-  if (remaining) {
-    terms.push(...prepareSearchTerms(remaining));
-  }
-
-  return { phrases, terms };
-}
+export { generateSunnahUrl };
+export type { RankedResult, HadithRankedResult, AyahRankedResult };
 
 /**
  * Build Elasticsearch query from parsed query
@@ -591,7 +450,7 @@ function mapHadithHitToResult(
     text: source.text_arabic,
     chapterArabic: source.chapter_arabic,
     chapterEnglish: source.chapter_english,
-    sunnahComUrl: generateSunnahComUrl(source.collection_slug, source.hadith_number, source.book_number),
+    sunnahUrl: generateSunnahUrl(source.collection_slug, source.hadith_number, source.book_number),
     keywordRank: index + 1,
     tsRank: hit._score || 0,
     bm25Score: hit._score || 0,
@@ -716,7 +575,7 @@ function mapAyahHitToResult(
     text: source.text_uthmani,
     juzNumber: source.juz_number,
     pageNumber: source.page_number,
-    quranComUrl: generateQuranComUrl(source.surah_number, source.ayah_number),
+    quranUrl: generateQuranUrl(source.surah_number, source.ayah_number),
     keywordRank: index + 1,
     tsRank: hit._score || 0,
     bm25Score: hit._score || 0,

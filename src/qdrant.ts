@@ -56,4 +56,16 @@ export const QURAN_COLLECTION_BGE = QDRANT_QURAN_COLLECTION_BGE;
 // Re-export from constants for backwards compatibility
 export { EMBEDDING_DIMENSIONS, GEMINI_DIMENSIONS, BGE_DIMENSIONS } from "./constants";
 
+import { GEMINI_DIMENSIONS, BGE_DIMENSIONS } from "./constants";
+
+export function getCollections(model: "gemini" | "bge-m3") {
+  const isBGE = model === "bge-m3";
+  return {
+    pages: isBGE ? QDRANT_COLLECTION_BGE : QDRANT_COLLECTION,
+    quran: isBGE ? QDRANT_QURAN_COLLECTION_BGE : QDRANT_QURAN_COLLECTION,
+    hadith: isBGE ? QDRANT_HADITH_COLLECTION_BGE : QDRANT_HADITH_COLLECTION,
+    dimensions: isBGE ? BGE_DIMENSIONS : GEMINI_DIMENSIONS,
+  };
+}
+
 export default qdrant;

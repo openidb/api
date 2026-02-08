@@ -1,5 +1,5 @@
 import { normalizeBM25Score } from "../../search/bm25";
-import { RRF_K, SEMANTIC_WEIGHT, KEYWORD_WEIGHT } from "./config";
+import { RRF_K, SEMANTIC_WEIGHT, KEYWORD_WEIGHT, FLOAT_TOLERANCE } from "./config";
 import type { RankedResult, AyahRankedResult, HadithRankedResult } from "./types";
 
 /**
@@ -30,14 +30,21 @@ function calculateFusedScore(
 }
 
 /**
- * Generic RRF merge function for any content type with weighted score fusion
+ * Generic RRF merge function for any content type with weighted score fusion.
+ * getKeywordScore extracts the keyword score from an item (defaults to item.score).
+ * onMerge is called when a keyword result matches an existing semantic result.
  */
 export function mergeWithRRFGeneric<T extends { semanticRank?: number; keywordRank?: number; semanticScore?: number; score?: number; tsRank?: number; bm25Score?: number }>(
   semanticResults: T[],
   keywordResults: T[],
   getKey: (item: T) => string,
-  query: string
+  query: string,
+  opts?: {
+    getKeywordScore?: (item: T) => number | undefined;
+    onMerge?: (existing: T, incoming: T) => void;
+  }
 ): (T & { rrfScore: number; fusedScore: number })[] {
+  const getKwScore = opts?.getKeywordScore ?? ((item: T) => item.score);
   const resultMap = new Map<string, T & { rrfScore: number; fusedScore: number; keywordScore?: number }>();
 
   for (const item of semanticResults) {
@@ -50,11 +57,12 @@ export function mergeWithRRFGeneric<T extends { semanticRank?: number; keywordRa
     const existing = resultMap.get(key);
     if (existing) {
       existing.keywordRank = item.keywordRank;
-      existing.keywordScore = item.score;
+      existing.keywordScore = getKwScore(item);
       existing.tsRank = item.tsRank;
       existing.bm25Score = item.bm25Score;
+      opts?.onMerge?.(existing, item);
     } else {
-      resultMap.set(key, { ...item, rrfScore: 0, fusedScore: 0, keywordScore: item.score });
+      resultMap.set(key, { ...item, rrfScore: 0, fusedScore: 0, keywordScore: getKwScore(item) });
     }
   }
 
@@ -73,61 +81,32 @@ export function mergeWithRRFGeneric<T extends { semanticRank?: number; keywordRa
 
   return merged.sort((a, b) => {
     const fusedDiff = b.fusedScore - a.fusedScore;
-    if (Math.abs(fusedDiff) > 0.001) return fusedDiff;
+    if (Math.abs(fusedDiff) > FLOAT_TOLERANCE) return fusedDiff;
     return b.rrfScore - a.rrfScore;
   });
 }
 
 /**
- * Merge results using weighted score fusion for books
+ * Merge results using weighted score fusion for books.
+ * Delegates to mergeWithRRFGeneric with book-specific highlightedSnippet merge.
  */
 export function mergeWithRRF(
   semanticResults: RankedResult[],
   keywordResults: RankedResult[],
   query: string
 ): (RankedResult & { fusedScore: number })[] {
-  const resultMap = new Map<string, RankedResult & { fusedScore: number }>();
-
-  for (const result of semanticResults) {
-    const key = `${result.bookId}-${result.pageNumber}`;
-    resultMap.set(key, { ...result, fusedScore: 0 });
-  }
-
-  for (const result of keywordResults) {
-    const key = `${result.bookId}-${result.pageNumber}`;
-    const existing = resultMap.get(key);
-
-    if (existing) {
-      existing.keywordRank = result.keywordRank;
-      existing.keywordScore = result.keywordScore;
-      existing.highlightedSnippet = result.highlightedSnippet;
-      existing.tsRank = result.tsRank;
-      existing.bm25Score = result.bm25Score;
-    } else {
-      resultMap.set(key, { ...result, fusedScore: 0 });
+  return mergeWithRRFGeneric(
+    semanticResults,
+    keywordResults,
+    (r) => `${r.bookId}-${r.pageNumber}`,
+    query,
+    {
+      getKeywordScore: (r) => r.keywordScore,
+      onMerge: (existing, incoming) => {
+        existing.highlightedSnippet = incoming.highlightedSnippet;
+      },
     }
-  }
-
-  const merged = Array.from(resultMap.values()).map((result) => {
-    const fusedScore = calculateFusedScore(
-      result.semanticRank !== undefined,
-      result.keywordRank !== undefined,
-      result.semanticScore ?? 0,
-      result.bm25Score,
-      result.keywordScore
-    );
-    const rrfScore = calculateRRFScore([result.semanticRank, result.keywordRank]);
-
-    return { ...result, fusedScore, rrfScore };
-  });
-
-  merged.sort((a, b) => {
-    const fusedDiff = b.fusedScore - a.fusedScore;
-    if (Math.abs(fusedDiff) > 0.001) return fusedDiff;
-    return b.rrfScore - a.rrfScore;
-  });
-
-  return merged;
+  );
 }
 
 /**

@@ -1,6 +1,7 @@
 import { Hono } from "hono";
 import { prisma } from "../db";
-import { generateSunnahComUrl } from "../utils/source-urls";
+import { generateSunnahUrl } from "../utils/source-urls";
+import { parsePagination } from "../utils/pagination";
 
 export const hadithRoutes = new Hono();
 
@@ -64,6 +65,7 @@ hadithRoutes.get("/collections/:slug", async (c) => {
         hadithCount: book._count.hadiths,
       })),
     },
+    _sources: [{ name: "sunnah.com", url: "https://sunnah.com", type: "scrape" }],
   });
 });
 
@@ -71,11 +73,7 @@ hadithRoutes.get("/collections/:slug", async (c) => {
 hadithRoutes.get("/collections/:slug/books/:bookNumber", async (c) => {
   const slug = c.req.param("slug");
   const bookNumber = parseInt(c.req.param("bookNumber"), 10);
-  const limitParam = c.req.query("limit");
-  const offsetParam = c.req.query("offset");
-
-  const limit = Math.min(Math.max(parseInt(limitParam || "50", 10), 1), 200);
-  const offset = Math.max(parseInt(offsetParam || "0", 10), 0);
+  const { limit, offset } = parsePagination(c.req.query("limit"), c.req.query("offset"), 50, 200);
 
   const book = await prisma.hadithBook.findFirst({
     where: { collection: { slug }, bookNumber },
@@ -112,11 +110,12 @@ hadithRoutes.get("/collections/:slug/books/:bookNumber", async (c) => {
     book,
     hadiths: hadiths.map((h) => ({
       ...h,
-      sunnahComUrl: generateSunnahComUrl(slug, h.hadithNumber, bookNumber),
+      sunnahUrl: generateSunnahUrl(slug, h.hadithNumber, bookNumber),
     })),
     total,
     limit,
     offset,
+    _sources: [{ name: "sunnah.com", url: "https://sunnah.com", type: "scrape" }],
   });
 });
 
@@ -154,7 +153,8 @@ hadithRoutes.get("/collections/:slug/:number", async (c) => {
   return c.json({
     hadith: {
       ...hadith,
-      sunnahComUrl: generateSunnahComUrl(slug, hadith.hadithNumber, hadith.book.bookNumber),
+      sunnahUrl: generateSunnahUrl(slug, hadith.hadithNumber, hadith.book.bookNumber),
     },
+    _sources: [{ name: "sunnah.com", url: "https://sunnah.com", type: "scrape" }],
   });
 });

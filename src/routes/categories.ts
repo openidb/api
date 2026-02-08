@@ -1,5 +1,6 @@
 import { Hono } from "hono";
 import { prisma } from "../db";
+import { parsePagination } from "../utils/pagination";
 
 export const categoriesRoutes = new Hono();
 
@@ -29,6 +30,7 @@ categoriesRoutes.get("/", async (c) => {
         parentId: cat.parentId,
         booksCount: cat._count.books,
       })),
+      _sources: [{ name: "Maktaba Shamela", url: "https://shamela.ws", type: "backup" }],
     });
   }
 
@@ -65,7 +67,10 @@ categoriesRoutes.get("/", async (c) => {
     }
   }
 
-  return c.json({ categories: roots });
+  return c.json({
+    categories: roots,
+    _sources: [{ name: "Maktaba Shamela", url: "https://shamela.ws", type: "backup" }],
+  });
 });
 
 // GET /:id — get category with books
@@ -75,10 +80,7 @@ categoriesRoutes.get("/:id", async (c) => {
     return c.json({ error: "Invalid category ID" }, 400);
   }
 
-  const limitParam = c.req.query("limit");
-  const offsetParam = c.req.query("offset");
-  const limit = Math.min(Math.max(parseInt(limitParam || "20", 10), 1), 100);
-  const offset = Math.max(parseInt(offsetParam || "0", 10), 0);
+  const { limit, offset } = parsePagination(c.req.query("limit"), c.req.query("offset"));
 
   const category = await prisma.category.findUnique({
     where: { id },
@@ -112,5 +114,12 @@ categoriesRoutes.get("/:id", async (c) => {
     prisma.book.count({ where: { categoryId: id } }),
   ]);
 
-  return c.json({ category, books, total, limit, offset });
+  return c.json({
+    category,
+    books,
+    total,
+    limit,
+    offset,
+    _sources: [{ name: "Maktaba Shamela", url: "https://shamela.ws", type: "backup" }],
+  });
 });

@@ -1,6 +1,7 @@
 import { Hono } from "hono";
 import { prisma } from "../db";
-import { generateQuranComUrl, generateTafsirSourceUrl, generateTranslationSourceUrl } from "../utils/source-urls";
+import { generateQuranUrl, generateTafsirSourceUrl, generateTranslationSourceUrl } from "../utils/source-urls";
+import { parsePagination } from "../utils/pagination";
 
 export const quranRoutes = new Hono();
 
@@ -54,9 +55,10 @@ quranRoutes.get("/surahs/:number", async (c) => {
       ...surah,
       ayahs: surah.ayahs.map((a) => ({
         ...a,
-        quranComUrl: generateQuranComUrl(number, a.ayahNumber),
+        quranUrl: generateQuranUrl(number, a.ayahNumber),
       })),
     },
+    _sources: [{ name: "Al Quran Cloud API", url: "https://api.alquran.cloud", type: "api" }],
   });
 });
 
@@ -65,11 +67,7 @@ quranRoutes.get("/ayahs", async (c) => {
   const surah = c.req.query("surah");
   const juz = c.req.query("juz");
   const page = c.req.query("page");
-  const limitParam = c.req.query("limit");
-  const offsetParam = c.req.query("offset");
-
-  const limit = Math.min(Math.max(parseInt(limitParam || "50", 10), 1), 500);
-  const offset = Math.max(parseInt(offsetParam || "0", 10), 0);
+  const { limit, offset } = parsePagination(c.req.query("limit"), c.req.query("offset"), 50, 500);
 
   const where: Record<string, unknown> = {};
   if (surah) {
@@ -105,11 +103,12 @@ quranRoutes.get("/ayahs", async (c) => {
   return c.json({
     ayahs: ayahs.map((a) => ({
       ...a,
-      quranComUrl: generateQuranComUrl(a.surah.number, a.ayahNumber),
+      quranUrl: generateQuranUrl(a.surah.number, a.ayahNumber),
     })),
     total,
     limit,
     offset,
+    _sources: [{ name: "Al Quran Cloud API", url: "https://api.alquran.cloud", type: "api" }],
   });
 });
 

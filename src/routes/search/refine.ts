@@ -1,4 +1,5 @@
 import { getCachedExpansion, setCachedExpansion } from "../../query-expansion-cache";
+import { callOpenRouter } from "../../lib/openrouter";
 import type { ExpandedQuery } from "./types";
 
 export function getQueryExpansionModelId(model: string): string {
@@ -15,10 +16,6 @@ export async function expandQuery(query: string, model: string = "gemini-flash")
   const cached = getCachedExpansion(query);
   if (cached) {
     return cached;
-  }
-
-  if (!process.env.OPENROUTER_API_KEY) {
-    return [{ query, weight: 1.0, reason: "Original query" }];
   }
 
   try {
@@ -45,28 +42,18 @@ IMPORTANT:
 - Don't include the original query in your response`;
 
     const modelId = getQueryExpansionModelId(model);
-    const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Authorization": `Bearer ${process.env.OPENROUTER_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: modelId,
-        messages: [{ role: "user", content: prompt }],
-        temperature: 0.3,
-      }),
+    const result = await callOpenRouter({
+      model: modelId,
+      messages: [{ role: "user", content: prompt }],
+      temperature: 0.3,
+      timeoutMs: 15000,
     });
 
-    if (!response.ok) {
-      console.warn(`Query expansion failed: ${response.statusText}`);
+    if (!result) {
       return [{ query, weight: 1.0, reason: "Original query" }];
     }
 
-    const data = await response.json();
-    const content = data.choices?.[0]?.message?.content || "[]";
-
-    const match = content.match(/\[[\s\S]*\]/);
+    const match = result.content.match(/\[[\s\S]*\]/);
     if (!match) {
       console.warn("Query expansion returned invalid format");
       return [{ query, weight: 1.0, reason: "Original query" }];
