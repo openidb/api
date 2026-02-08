@@ -10,8 +10,8 @@ export const SOURCES = {
   sunnah: [{ name: "sunnah.com", url: "https://sunnah.com", type: "scrape" }],
   quranCloud: [{ name: "Al Quran Cloud API", url: "https://api.alquran.cloud", type: "api" }],
   tafsir: [
-    { name: "quran-tafseer.com (Jalalayn)", url: "http://api.quran-tafseer.com", type: "api" },
-    { name: "spa5k/tafsir_api (Ibn Kathir)", url: "https://github.com/spa5k/tafsir_api", type: "api" },
+    { name: "spa5k/tafsir_api", url: "https://github.com/spa5k/tafsir_api", type: "api" },
+    { name: "quran-tafseer.com", url: "http://api.quran-tafseer.com", type: "api" },
   ],
   quranTranslation: [{ name: "fawazahmed0/quran-api", url: "https://github.com/fawazahmed0/quran-api", type: "api" }],
 } as const;
@@ -58,17 +58,21 @@ export function generateShamelaPageUrl(bookId: string, pageNumber: number): stri
 
 /**
  * Generate a source URL for a tafsir entry.
+ * Accepts editionId (e.g. "ar-tafsir-ibn-kathir") or legacy source slug.
  */
 export function generateTafsirSourceUrl(
-  source: string,
-  surahNumber: number,
-  ayahNumber: number
+  editionIdOrSource: string,
+  surahNumber: number
 ): string {
-  if (source === "ibn_kathir") {
+  // Legacy source values
+  if (editionIdOrSource === "jalalayn") {
+    return `https://cdn.jsdelivr.net/gh/spa5k/tafsir_api@main/tafsir/ar-jalalayn/${surahNumber}.json`;
+  }
+  if (editionIdOrSource === "ibn_kathir") {
     return `https://cdn.jsdelivr.net/gh/spa5k/tafsir_api@main/tafsir/ar-tafsir-ibn-kathir/${surahNumber}.json`;
   }
-  // jalalayn (default)
-  return `http://api.quran-tafseer.com/tafseer/2/${surahNumber}/${ayahNumber}`;
+  // Edition ID — direct CDN URL
+  return `https://cdn.jsdelivr.net/gh/spa5k/tafsir_api@main/tafsir/${editionIdOrSource}/${surahNumber}.json`;
 }
 
 /**

@@ -18,11 +18,17 @@ export async function fetchAndMergeTranslations(
 }> {
   const { quranTranslation, hadithTranslation, bookContentTranslation } = params;
 
+  // Detect if quranTranslation is an edition ID (contains '-') or language code
+  const isEditionId = quranTranslation !== "none" && quranTranslation.includes("-");
+  const quranTransWhere = isEditionId
+    ? { editionId: quranTranslation }
+    : { language: quranTranslation };
+
   const [ayahTranslations, hadithTranslationsRaw, bookContentTranslationsRaw] = await Promise.all([
     (quranTranslation !== "none" && ayahsRaw.length > 0)
       ? prisma.ayahTranslation.findMany({
           where: {
-            language: quranTranslation,
+            ...quranTransWhere,
             OR: ayahsRaw.map((a) => ({ surahNumber: a.surahNumber, ayahNumber: a.ayahNumber })),
           },
           select: { surahNumber: true, ayahNumber: true, text: true },

@@ -302,9 +302,10 @@ model AyahTranslation {
   editionId   String @map("edition_id") // "eng-mustafakhattaba", etc.
   text        String @db.Text
 
-  @@unique([surahNumber, ayahNumber, language])
+  @@unique([surahNumber, ayahNumber, editionId])
   @@index([surahNumber, ayahNumber])
   @@index([language])
+  @@index([editionId])
   @@map("ayah_translations")
 }
 
@@ -312,13 +313,41 @@ model AyahTafsir {
   id          Int    @id @default(autoincrement())
   surahNumber Int    @map("surah_number")
   ayahNumber  Int    @map("ayah_number")
-  source      String // "jalalayn", "saadi", "ibn_kathir", etc.
+  source      String // "jalalayn", "ibn_kathir", etc. (kept for backward compat)
+  editionId   String @map("edition_id") // "ar-tafsir-ibn-kathir", "ar-jalalayn"
+  language    String @default("ar") // "ar", "en", "bn", etc.
   text        String @db.Text
 
-  @@unique([surahNumber, ayahNumber, source])
+  @@unique([surahNumber, ayahNumber, editionId])
   @@index([surahNumber, ayahNumber])
   @@index([source])
+  @@index([editionId])
+  @@index([language])
   @@map("ayah_tafsirs")
+}
+
+model QuranTranslation {
+  id        String  @id              // "eng-mustafakhattaba"
+  language  String                   // ISO code: "en", "ar", etc.
+  name      String                   // Display name
+  author    String?                  // Translator name
+  source    String                   // "fawazahmed0"
+  direction String  @default("ltr")  // "ltr" | "rtl"
+
+  @@index([language])
+  @@map("quran_translations")
+}
+
+model QuranTafsir {
+  id        String  @id              // "ar-tafsir-ibn-kathir"
+  language  String                   // ISO code: "en", "ar", etc.
+  name      String                   // Display name
+  author    String?                  // Author name
+  source    String                   // "spa5k-tafsir"
+  direction String  @default("ltr")  // "ltr" | "rtl"
+
+  @@index([language])
+  @@map("quran_tafsirs")
 }
 
 // ============================================================================

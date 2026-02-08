@@ -112,18 +112,36 @@ quranRoutes.get("/ayahs", async (c) => {
   });
 });
 
+// GET /tafsirs — list available tafsir editions
+quranRoutes.get("/tafsirs", async (c) => {
+  const language = c.req.query("language");
+  const where: Record<string, unknown> = {};
+  if (language) where.language = language;
+
+  const tafsirs = await prisma.quranTafsir.findMany({
+    where,
+    orderBy: [{ language: "asc" }, { name: "asc" }],
+  });
+
+  return c.json({ tafsirs, count: tafsirs.length });
+});
+
 // GET /tafsir/:surah/:ayah — get tafsir for an ayah
 quranRoutes.get("/tafsir/:surah/:ayah", async (c) => {
   const surahNumber = parseInt(c.req.param("surah"), 10);
   const ayahNumber = parseInt(c.req.param("ayah"), 10);
   const source = c.req.query("source");
+  const editionId = c.req.query("editionId");
+  const language = c.req.query("language");
 
   const where: Record<string, unknown> = { surahNumber, ayahNumber };
-  if (source) where.source = source;
+  if (editionId) where.editionId = editionId;
+  else if (source) where.source = source;
+  if (language) where.language = language;
 
   const tafsirs = await prisma.ayahTafsir.findMany({
     where,
-    select: { source: true, text: true },
+    select: { source: true, editionId: true, language: true, text: true },
   });
 
   return c.json({
@@ -131,10 +149,24 @@ quranRoutes.get("/tafsir/:surah/:ayah", async (c) => {
     ayahNumber,
     tafsirs: tafsirs.map((t) => ({
       ...t,
-      sourceUrl: generateTafsirSourceUrl(t.source, surahNumber, ayahNumber),
+      sourceUrl: generateTafsirSourceUrl(t.editionId, surahNumber),
     })),
     _sources: SOURCES.tafsir,
   });
+});
+
+// GET /translations — list available translation editions
+quranRoutes.get("/translations", async (c) => {
+  const language = c.req.query("language");
+  const where: Record<string, unknown> = {};
+  if (language) where.language = language;
+
+  const translations = await prisma.quranTranslation.findMany({
+    where,
+    orderBy: [{ language: "asc" }, { name: "asc" }],
+  });
+
+  return c.json({ translations, count: translations.length });
 });
 
 // GET /translations/:surah/:ayah — get translations for an ayah
@@ -142,9 +174,11 @@ quranRoutes.get("/translations/:surah/:ayah", async (c) => {
   const surahNumber = parseInt(c.req.param("surah"), 10);
   const ayahNumber = parseInt(c.req.param("ayah"), 10);
   const language = c.req.query("language");
+  const editionId = c.req.query("editionId");
 
   const where: Record<string, unknown> = { surahNumber, ayahNumber };
-  if (language) where.language = language;
+  if (editionId) where.editionId = editionId;
+  else if (language) where.language = language;
 
   const translations = await prisma.ayahTranslation.findMany({
     where,

@@ -6,7 +6,7 @@ Built with Hono, PostgreSQL, Qdrant, Elasticsearch, and Neo4j.
 
 ## Data
 
-- **Quran** — 114 surahs, 6,236 ayahs (Uthmani script), 12 translation languages, 2 tafsirs (Al-Jalalayn, Ibn Kathir)
+- **Quran** — 114 surahs, 6,236 ayahs (Uthmani script), 500+ translation editions across 90+ languages, 27 tafsirs in 6 languages
 - **Hadith** — 17 collections (Bukhari, Muslim, Abu Dawud, Tirmidhi, Nasa'i, Ibn Majah, Ahmad, Malik, Darimi, Riyad as-Salihin, Al-Adab Al-Mufrad, Ash-Shama'il, Mishkat al-Masabih, Bulugh al-Maram, Nawawi's 40, 40 Qudsi, Hisn al-Muslim)
 - **Books** — Classical Arabic texts from Maktaba Shamela with full-text content, authors, categories, and publishers
 
@@ -20,7 +20,9 @@ Base URL: `http://localhost:4000`
 | `GET /api/quran/surahs` | List all surahs |
 | `GET /api/quran/surahs/:number` | Surah with ayahs |
 | `GET /api/quran/ayahs` | Query ayahs (filter by surah, juz, page) |
+| `GET /api/quran/tafsirs` | List available tafsir editions |
 | `GET /api/quran/tafsir/:surah/:ayah` | Tafsir for an ayah |
+| `GET /api/quran/translations` | List available translation editions |
 | `GET /api/quran/translations/:surah/:ayah` | Translations for an ayah |
 | `GET /api/hadith/collections` | List hadith collections |
 | `GET /api/hadith/collections/:slug` | Collection with books |
@@ -149,9 +151,12 @@ Import scripts live in `pipelines/import/`:
 
 ```bash
 bun run pipelines/import/import-quran.ts              # Quran from Al Quran Cloud API
-bun run pipelines/import/import-quran-translations.ts  # Quran translations
-bun run pipelines/import/import-tafsir.ts              # Al-Jalalayn tafsir
-bun run pipelines/import/import-ibn-kathir.ts          # Ibn Kathir tafsir
+bun run pipelines/import/import-quran-translations.ts --all  # All Quran translations (500+)
+bun run pipelines/import/import-quran-translations.ts --lang=en,fr  # By language
+bun run pipelines/import/import-quran-translations.ts --edition=eng-mustafakhattaba  # Single edition
+bun run pipelines/import/import-tafsirs.ts --all       # All tafsirs (27 editions)
+bun run pipelines/import/import-tafsirs.ts --lang=en   # By language
+bun run pipelines/import/import-tafsirs.ts --edition=en-al-jalalayn  # Single edition
 bun run pipelines/import/scrape-sunnah.ts              # Hadith collections from sunnah.com
 bun run pipelines/import/import-epubs.ts               # Books from Shamela EPUBs
 ```

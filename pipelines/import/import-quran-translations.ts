@@ -2,32 +2,25 @@
  * Import Quran Translations Script
  *
  * Fetches translations from fawazahmed0/quran-api via jsDelivr CDN
- * and imports them into the database.
+ * and imports them into the database. Supports importing all available
+ * editions (~500+) or filtering by language/edition.
  *
  * Data Source: https://github.com/fawazahmed0/quran-api
  * CDN: https://cdn.jsdelivr.net/gh/fawazahmed0/quran-api@1/editions/{edition-id}.json
  *
- * Usage: bun run scripts/import-quran-translations.ts [--force] [--lang=en,ur,fr]
+ * Usage:
+ *   bun run pipelines/import/import-quran-translations.ts --all [--force]
+ *   bun run pipelines/import/import-quran-translations.ts --lang=en,fr,ur
+ *   bun run pipelines/import/import-quran-translations.ts --edition=eng-mustafakhattaba
  */
 
 import "../env";
 import { prisma } from "../../src/db";
-
-// Translation editions to import (12 languages matching app UI languages, excluding Arabic)
-const TRANSLATIONS: { lang: string; edition: string; name: string }[] = [
-  { lang: "en", edition: "eng-mustafakhattaba", name: "Dr. Mustafa Khattab (The Clear Quran)" },
-  { lang: "fr", edition: "fra-muhammadhameedu", name: "Muhammad Hamidullah" },
-  { lang: "id", edition: "ind-indonesianislam", name: "Indonesian Islamic Ministry" },
-  { lang: "ur", edition: "urd-fatehmuhammadja", name: "Fateh Muhammad Jalandhry" },
-  { lang: "es", edition: "spa-muhammadisagarc", name: "Isa Garcia" },
-  { lang: "zh", edition: "zho-majian", name: "Ma Jian" },
-  { lang: "pt", edition: "por-samirelhayek", name: "Samir El-Hayek" },
-  { lang: "ru", edition: "rus-elmirkuliev", name: "Elmir Kuliev" },
-  { lang: "ja", edition: "jpn-ryoichimita", name: "Ryoichi Mita" },
-  { lang: "ko", edition: "kor-hamidchoi", name: "Hamid Choi" },
-  { lang: "it", edition: "ita-hamzarobertopic", name: "Hamza Roberto Piccardo" },
-  { lang: "bn", edition: "ben-muhiuddinkhan", name: "Muhiuddin Khan" },
-];
+import {
+  fetchTranslationEditions,
+  syncTranslationMetadata,
+  type TranslationEdition,
+} from "./quran-resources";
 
 // API response type from fawazahmed0/quran-api
 interface QuranApiResponse {
@@ -51,71 +44,67 @@ function stripHtmlTags(text: string): string {
 /**
  * Fetch translation from jsDelivr CDN
  */
-async function fetchTranslation(edition: string): Promise<QuranApiResponse | null> {
-  const url = `https://cdn.jsdelivr.net/gh/fawazahmed0/quran-api@1/editions/${edition}.json`;
-
+async function fetchTranslation(cdnUrl: string): Promise<QuranApiResponse | null> {
   try {
-    const response = await fetch(url);
+    const response = await fetch(cdnUrl);
     if (!response.ok) {
-      console.error(`Failed to fetch ${edition}: ${response.status} ${response.statusText}`);
+      console.error(`Failed to fetch: ${response.status} ${response.statusText}`);
       return null;
     }
-    return await response.json() as QuranApiResponse;
+    return (await response.json()) as QuranApiResponse;
   } catch (error) {
-    console.error(`Error fetching ${edition}:`, error);
+    console.error(`Error fetching:`, error);
     return null;
   }
 }
 
 /**
- * Import a single translation into the database
+ * Import a single translation edition into the database
  */
-async function importTranslation(
-  lang: string,
-  edition: string,
-  name: string,
+async function importEdition(
+  edition: TranslationEdition,
   force: boolean
-): Promise<{ imported: number; skipped: number }> {
-  console.log(`\n📖 Importing ${name} (${lang})...`);
+): Promise<{ imported: number; skipped: boolean }> {
+  console.log(`\n📖 [${edition.id}] ${edition.name} (${edition.language})...`);
 
-  // Check if translation already exists (if not forcing)
+  // Check if edition already exists by editionId
   if (!force) {
     const existingCount = await prisma.ayahTranslation.count({
-      where: { language: lang },
+      where: { editionId: edition.id },
     });
     if (existingCount > 0) {
       console.log(`   ⏭️  Already imported (${existingCount} ayahs). Use --force to re-import.`);
-      return { imported: 0, skipped: existingCount };
+      return { imported: 0, skipped: true };
     }
   }
 
   // Fetch translation from CDN
-  const data = await fetchTranslation(edition);
+  const data = await fetchTranslation(edition.cdnUrl);
   if (!data || !data.quran) {
     console.error(`   ❌ Failed to fetch translation data`);
-    return { imported: 0, skipped: 0 };
+    return { imported: 0, skipped: false };
   }
 
-  // Delete existing translations for this language (if forcing)
+  // Delete existing translations for this edition if forcing
   if (force) {
     const deleted = await prisma.ayahTranslation.deleteMany({
-      where: { language: lang },
+      where: { editionId: edition.id },
     });
     if (deleted.count > 0) {
       console.log(`   🗑️  Deleted ${deleted.count} existing translations`);
     }
   }
 
-  // Prepare upsert data
+  // Prepare data
   const translations = data.quran.map((ayah) => ({
     surahNumber: ayah.chapter,
     ayahNumber: ayah.verse,
-    language: lang,
-    editionId: edition,
+    language: edition.language,
+    editionId: edition.id,
     text: stripHtmlTags(ayah.text),
   }));
 
-  // Batch insert using createMany for performance
+  // Batch insert
   const BATCH_SIZE = 1000;
   let imported = 0;
 
@@ -130,52 +119,91 @@ async function importTranslation(
   }
 
   console.log(`   ✅ Imported ${imported} ayahs`);
-  return { imported, skipped: 0 };
+  return { imported, skipped: false };
 }
 
-/**
- * Main import function
- */
 async function main() {
   const args = process.argv.slice(2);
   const force = args.includes("--force");
+  const all = args.includes("--all");
+  const langArg = args.find((a) => a.startsWith("--lang="));
+  const editionArg = args.find((a) => a.startsWith("--edition="));
 
-  // Parse --lang argument for selective import
-  const langArg = args.find((arg) => arg.startsWith("--lang="));
   const selectedLangs = langArg
     ? langArg.split("=")[1].split(",").map((l) => l.trim())
     : null;
+  const selectedEdition = editionArg ? editionArg.split("=")[1].trim() : null;
+
+  if (!all && !selectedLangs && !selectedEdition) {
+    console.error("Usage:");
+    console.error("  --all                Import all available editions");
+    console.error("  --lang=en,fr,ur      Import editions for specific languages");
+    console.error("  --edition=eng-xxx    Import a single edition by ID");
+    console.error("  --force              Re-import even if already exists");
+    process.exit(1);
+  }
 
   console.log("🕌 Quran Translations Import Script");
   console.log("=====================================");
   console.log(`Force mode: ${force ? "ON" : "OFF"}`);
-  if (selectedLangs) {
-    console.log(`Selected languages: ${selectedLangs.join(", ")}`);
+
+  // Fetch all available editions from CDN
+  console.log("Fetching available editions from CDN...");
+  const allEditions = await fetchTranslationEditions();
+  console.log(`Found ${allEditions.length} editions available`);
+
+  // Sync metadata to QuranTranslation table
+  console.log("Syncing translation metadata...");
+  const synced = await syncTranslationMetadata(allEditions);
+  console.log(`Synced ${synced} translation metadata rows`);
+
+  // Filter editions
+  let editions: TranslationEdition[];
+  if (selectedEdition) {
+    editions = allEditions.filter((e) => e.id === selectedEdition);
+    if (editions.length === 0) {
+      console.error(`Edition "${selectedEdition}" not found. Available editions:`);
+      const sample = allEditions.slice(0, 10).map((e) => `  ${e.id} (${e.language})`);
+      console.error(sample.join("\n") + "\n  ...");
+      process.exit(1);
+    }
+  } else if (selectedLangs) {
+    editions = allEditions.filter((e) => selectedLangs.includes(e.language));
+    console.log(`Filtered to ${editions.length} editions for languages: ${selectedLangs.join(", ")}`);
+  } else {
+    editions = allEditions;
   }
 
-  // Filter translations if specific languages requested
-  const translationsToImport = selectedLangs
-    ? TRANSLATIONS.filter((t) => selectedLangs.includes(t.lang))
-    : TRANSLATIONS;
-
-  if (translationsToImport.length === 0) {
-    console.error("No valid translations found for the specified languages.");
+  if (editions.length === 0) {
+    console.error("No editions match the given filters.");
     process.exit(1);
   }
 
+  console.log(`\nImporting ${editions.length} editions...`);
+
   let totalImported = 0;
   let totalSkipped = 0;
+  let totalFailed = 0;
 
-  for (const { lang, edition, name } of translationsToImport) {
-    const { imported, skipped } = await importTranslation(lang, edition, name, force);
-    totalImported += imported;
-    totalSkipped += skipped;
+  for (let i = 0; i < editions.length; i++) {
+    const edition = editions[i];
+    console.log(`\n[${i + 1}/${editions.length}]`);
+    try {
+      const { imported, skipped } = await importEdition(edition, force);
+      totalImported += imported;
+      if (skipped) totalSkipped++;
+    } catch (error) {
+      console.error(`   ❌ Error importing ${edition.id}:`, error);
+      totalFailed++;
+    }
   }
 
   console.log("\n=====================================");
   console.log(`📊 Summary:`);
-  console.log(`   Imported: ${totalImported} ayahs`);
-  console.log(`   Skipped: ${totalSkipped} ayahs`);
+  console.log(`   Editions processed: ${editions.length}`);
+  console.log(`   Total ayahs imported: ${totalImported}`);
+  console.log(`   Editions skipped: ${totalSkipped}`);
+  console.log(`   Editions failed: ${totalFailed}`);
   console.log("✅ Done!");
 }
 
