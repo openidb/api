@@ -1,0 +1,538 @@
+{
+  "entities": [
+    {
+      "id": "prophet:muhammad",
+      "type": "Prophet",
+      "nameArabic": "محمد ﷺ",
+      "nameEnglish": "Muhammad ﷺ",
+      "descriptionArabic": "خاتم الأنبياء والمرسلين، أرسله الله رحمة للعالمين",
+      "descriptionEnglish": "The final Prophet and Messenger, sent by Allah as a mercy to all creation",
+      "sources": [
+        { "type": "quran", "ref": "108:1" },
+        { "type": "quran", "ref": "108:2" },
+        { "type": "quran", "ref": "108:3" },
+        { "type": "tafsir", "ref": "ibn-kathir:108:1" },
+        { "type": "tafsir", "ref": "ibn-kathir:108:2" },
+        { "type": "tafsir", "ref": "ibn-kathir:108:3" },
+        { "type": "hadith", "ref": "bukhari:6580" },
+        { "type": "hadith", "ref": "muslim:400" }
+      ]
+    },
+    {
+      "id": "divine-attribute:allah",
+      "type": "DivineAttribute",
+      "nameArabic": "الله",
+      "nameEnglish": "Allah",
+      "descriptionArabic": "الإله الواحد الأحد، رب العالمين",
+      "descriptionEnglish": "The One God, Lord of all creation",
+      "sources": [
+        { "type": "quran", "ref": "108:1" },
+        { "type": "tafsir", "ref": "ibn-kathir:108:1" }
+      ]
+    },
+    {
+      "id": "afterlife-place:al-kawthar",
+      "type": "AfterlifePlace",
+      "nameArabic": "الكوثر",
+      "nameEnglish": "Al-Kawthar (river in Paradise)",
+      "descriptionArabic": "نهر في الجنة أعطاه الله للنبي محمد ﷺ، حافتاه من ذهب وترابه المسك وحصباؤه اللؤلؤ",
+      "descriptionEnglish": "A river in Paradise granted to Prophet Muhammad ﷺ, its banks are of gold, its soil is musk, and its pebbles are pearls",
+      "sources": [
+        { "type": "quran", "ref": "108:1" },
+        { "type": "tafsir", "ref": "ibn-kathir:108:1" },
+        { "type": "hadith", "ref": "bukhari:6580" },
+        { "type": "hadith", "ref": "muslim:400" }
+      ]
+    },
+    {
+      "id": "afterlife-place:paradise",
+      "type": "AfterlifePlace",
+      "nameArabic": "الجنة",
+      "nameEnglish": "Paradise (Jannah)",
+      "descriptionArabic": "دار النعيم الأبدي التي أعدها الله للمؤمنين",
+      "descriptionEnglish": "The eternal abode of bliss prepared by Allah for the believers",
+      "sources": [
+        { "type": "quran", "ref": "108:1" },
+        { "type": "tafsir", "ref": "ibn-kathir:108:1" },
+        { "type": "hadith", "ref": "bukhari:6580" }
+      ]
+    },
+    {
+      "id": "afterlife-place:al-hawdh",
+      "type": "AfterlifePlace",
+      "nameArabic": "الحوض",
+      "nameEnglish": "The Pool (Al-Hawdh)",
+      "descriptionArabic": "حوض يرده أمة النبي ﷺ يوم القيامة، آنيته عدد نجوم السماء",
+      "descriptionEnglish": "A pool at which the Ummah of the Prophet ﷺ will drink on the Day of Judgment, its vessels as numerous as the stars",
+      "sources": [
+        { "type": "quran", "ref": "108:1" },
+        { "type": "tafsir", "ref": "ibn-kathir:108:1" },
+        { "type": "hadith", "ref": "bukhari:6579" },
+        { "type": "hadith", "ref": "bukhari:6580" }
+      ]
+    },
+    {
+      "id": "person:al-aas-ibn-wail",
+      "type": "Person",
+      "nameArabic": "العاص بن وائل",
+      "nameEnglish": "Al-'As ibn Wa'il",
+      "descriptionArabic": "من كفار قريش، كان يصف النبي ﷺ بالأبتر",
+      "descriptionEnglish": "A Qurayshi disbeliever who used to call the Prophet ﷺ 'the one cut off'",
+      "sources": [
+        { "type": "quran", "ref": "108:3" },
+        { "type": "tafsir", "ref": "ibn-kathir:108:3" }
+      ]
+    },
+    {
+      "id": "person:abu-lahab",
+      "type": "Person",
+      "nameArabic": "أبو لهب",
+      "nameEnglish": "Abu Lahab",
+      "descriptionArabic": "عم النبي ﷺ وعدوه، قال 'بُتر محمد' عند وفاة ابن النبي",
+      "descriptionEnglish": "Uncle and enemy of the Prophet ﷺ, said 'Muhammad is cut off' when the Prophet's son died",
+      "sources": [
+        { "type": "quran", "ref": "108:3" },
+        { "type": "tafsir", "ref": "ibn-kathir:108:3" }
+      ]
+    },
+    {
+      "id": "ruling:salah",
+      "type": "Ruling",
+      "nameArabic": "الصلاة",
+      "nameEnglish": "Prayer (Salah)",
+      "descriptionArabic": "العبادة المفروضة والنافلة، أمر الله بإخلاصها له",
+      "descriptionEnglish": "Obligatory and voluntary prayer, commanded to be performed sincerely for Allah",
+      "sources": [
+        { "type": "quran", "ref": "108:2" },
+        { "type": "tafsir", "ref": "ibn-kathir:108:2" }
+      ]
+    },
+    {
+      "id": "ruling:nahr",
+      "type": "Ruling",
+      "nameArabic": "النحر",
+      "nameEnglish": "Sacrifice (Nahr)",
+      "descriptionArabic": "ذبح الأضاحي والبدن لله وحده",
+      "descriptionEnglish": "Slaughtering sacrificial animals for the sake of Allah alone",
+      "sources": [
+        { "type": "quran", "ref": "108:2" },
+        { "type": "tafsir", "ref": "ibn-kathir:108:2" }
+      ]
+    },
+    {
+      "id": "concept:shukr",
+      "type": "Concept",
+      "nameArabic": "شكر النعمة",
+      "nameEnglish": "Gratitude for blessings (Shukr)",
+      "descriptionArabic": "شكر الله على نعمه بإخلاص العبادة له",
+      "descriptionEnglish": "Thanking Allah for His blessings by devoting worship sincerely to Him",
+      "sources": [
+        { "type": "quran", "ref": "108:2" },
+        { "type": "tafsir", "ref": "ibn-kathir:108:2" }
+      ]
+    },
+    {
+      "id": "concept:ikhlas",
+      "type": "Concept",
+      "nameArabic": "الإخلاص في العبادة",
+      "nameEnglish": "Sincerity in worship (Ikhlas)",
+      "descriptionArabic": "إفراد الله بالعبادة من صلاة ونحر وغيرها",
+      "descriptionEnglish": "Devoting all worship — prayer, sacrifice, and more — exclusively to Allah",
+      "sources": [
+        { "type": "quran", "ref": "108:2" },
+        { "type": "tafsir", "ref": "ibn-kathir:108:2" }
+      ]
+    },
+    {
+      "id": "angel:jibril",
+      "type": "Angel",
+      "nameArabic": "جبريل عليه السلام",
+      "nameEnglish": "Gabriel (Jibril)",
+      "descriptionArabic": "الملك الذي نزل بالوحي على النبي ﷺ وأخبره عن الكوثر",
+      "descriptionEnglish": "The angel who brought revelation to the Prophet ﷺ and informed him about Al-Kawthar",
+      "sources": [
+        { "type": "quran", "ref": "108:1" },
+        { "type": "tafsir", "ref": "ibn-kathir:108:1" },
+        { "type": "hadith", "ref": "bukhari:6580" }
+      ]
+    },
+    {
+      "id": "person:anas-ibn-malik",
+      "type": "Person",
+      "nameArabic": "أنس بن مالك",
+      "nameEnglish": "Anas ibn Malik",
+      "descriptionArabic": "صحابي جليل، خادم النبي ﷺ، راوي حديث الكوثر",
+      "descriptionEnglish": "Noble Companion, servant of the Prophet ﷺ, narrator of the hadith about Al-Kawthar",
+      "sources": [
+        { "type": "quran", "ref": "108:1" },
+        { "type": "hadith", "ref": "bukhari:6580" },
+        { "type": "hadith", "ref": "muslim:400" }
+      ]
+    },
+    {
+      "id": "time-reference:day-of-judgment",
+      "type": "TimeReference",
+      "nameArabic": "يوم القيامة",
+      "nameEnglish": "Day of Judgment",
+      "descriptionArabic": "اليوم الذي ترد فيه أمة النبي ﷺ على حوضه",
+      "descriptionEnglish": "The Day on which the Ummah of the Prophet ﷺ will come to his Pool",
+      "sources": [
+        { "type": "quran", "ref": "108:1" },
+        { "type": "tafsir", "ref": "ibn-kathir:108:1" },
+        { "type": "hadith", "ref": "bukhari:6579" }
+      ]
+    },
+    {
+      "id": "nation:quraysh",
+      "type": "Nation",
+      "nameArabic": "قريش",
+      "nameEnglish": "Quraysh",
+      "descriptionArabic": "قبيلة النبي ﷺ، كان بعض كفارها يعادونه ويصفونه بالأبتر",
+      "descriptionEnglish": "The Prophet's ﷺ tribe; some of its disbelievers opposed him and called him 'the one cut off'",
+      "sources": [
+        { "type": "quran", "ref": "108:3" },
+        { "type": "tafsir", "ref": "ibn-kathir:108:3" }
+      ]
+    },
+    {
+      "id": "event:revelation-of-al-kawthar",
+      "type": "Event",
+      "nameArabic": "نزول سورة الكوثر",
+      "nameEnglish": "Revelation of Surah Al-Kawthar",
+      "descriptionArabic": "نزلت على النبي ﷺ وهو في المسجد بين أصحابه حين أغفى إغفاءة ثم رفع رأسه متبسماً",
+      "descriptionEnglish": "Revealed to the Prophet ﷺ while he dozed briefly in the mosque among his companions, then raised his head smiling",
+      "sources": [
+        { "type": "quran", "ref": "108:1" },
+        { "type": "tafsir", "ref": "ibn-kathir:108:1" },
+        { "type": "hadith", "ref": "muslim:400" }
+      ]
+    },
+    {
+      "id": "event:isra-and-miraj",
+      "type": "Event",
+      "nameArabic": "الإسراء والمعراج",
+      "nameEnglish": "The Night Journey and Ascension (Isra and Mi'raj)",
+      "descriptionArabic": "رحلة النبي ﷺ الليلية التي رأى فيها نهر الكوثر في الجنة",
+      "descriptionEnglish": "The Prophet's ﷺ night journey during which he saw the river of Al-Kawthar in Paradise",
+      "sources": [
+        { "type": "quran", "ref": "108:1" },
+        { "type": "tafsir", "ref": "ibn-kathir:108:1" },
+        { "type": "hadith", "ref": "bukhari:6580" }
+      ]
+    }
+  ],
+  "relationships": [
+    {
+      "source": "afterlife-place:al-kawthar",
+      "target": "afterlife-place:paradise",
+      "type": "PART_OF",
+      "description": "Al-Kawthar is a river located in Paradise",
+      "sources": [
+        { "type": "quran", "ref": "108:1" },
+        { "type": "tafsir", "ref": "ibn-kathir:108:1" },
+        { "type": "hadith", "ref": "bukhari:6580" }
+      ]
+    },
+    {
+      "source": "afterlife-place:al-kawthar",
+      "target": "prophet:muhammad",
+      "type": "PROMISED_TO",
+      "description": "Allah granted Al-Kawthar to Prophet Muhammad ﷺ",
+      "sources": [
+        { "type": "quran", "ref": "108:1" },
+        { "type": "tafsir", "ref": "ibn-kathir:108:1" },
+        { "type": "hadith", "ref": "bukhari:6580" },
+        { "type": "hadith", "ref": "muslim:400" }
+      ]
+    },
+    {
+      "source": "afterlife-place:al-hawdh",
+      "target": "afterlife-place:al-kawthar",
+      "type": "FED_BY",
+      "description": "The Pool on the Day of Judgment is fed by two channels from Al-Kawthar",
+      "sources": [
+        { "type": "quran", "ref": "108:1" },
+        { "type": "hadith", "ref": "bukhari:6579" },
+        { "type": "hadith", "ref": "bukhari:6580" }
+      ]
+    },
+    {
+      "source": "afterlife-place:al-hawdh",
+      "target": "prophet:muhammad",
+      "type": "PROMISED_TO",
+      "description": "The Pool is promised to the Prophet ﷺ for his Ummah on the Day of Judgment",
+      "sources": [
+        { "type": "quran", "ref": "108:1" },
+        { "type": "hadith", "ref": "bukhari:6579" },
+        { "type": "hadith", "ref": "bukhari:6580" }
+      ]
+    },
+    {
+      "source": "divine-attribute:allah",
+      "target": "prophet:muhammad",
+      "type": "COMMANDED",
+      "description": "Allah commanded Muhammad ﷺ to pray and sacrifice exclusively for Him",
+      "sources": [
+        { "type": "quran", "ref": "108:2" },
+        { "type": "tafsir", "ref": "ibn-kathir:108:2" }
+      ]
+    },
+    {
+      "source": "ruling:salah",
+      "target": "prophet:muhammad",
+      "type": "COMMANDED_TO",
+      "description": "Prayer was commanded to the Prophet ﷺ as gratitude for Al-Kawthar",
+      "sources": [
+        { "type": "quran", "ref": "108:2" },
+        { "type": "tafsir", "ref": "ibn-kathir:108:2" }
+      ]
+    },
+    {
+      "source": "ruling:nahr",
+      "target": "prophet:muhammad",
+      "type": "COMMANDED_TO",
+      "description": "Sacrifice was commanded to the Prophet ﷺ alongside prayer",
+      "sources": [
+        { "type": "quran", "ref": "108:2" },
+        { "type": "tafsir", "ref": "ibn-kathir:108:2" }
+      ]
+    },
+    {
+      "source": "concept:shukr",
+      "target": "ruling:salah",
+      "type": "EXPRESSED_THROUGH",
+      "description": "Gratitude for Al-Kawthar is expressed through sincere prayer",
+      "sources": [
+        { "type": "quran", "ref": "108:1" },
+        { "type": "quran", "ref": "108:2" },
+        { "type": "tafsir", "ref": "ibn-kathir:108:2" }
+      ]
+    },
+    {
+      "source": "concept:shukr",
+      "target": "ruling:nahr",
+      "type": "EXPRESSED_THROUGH",
+      "description": "Gratitude for Al-Kawthar is expressed through sacrifice",
+      "sources": [
+        { "type": "quran", "ref": "108:1" },
+        { "type": "quran", "ref": "108:2" },
+        { "type": "tafsir", "ref": "ibn-kathir:108:2" }
+      ]
+    },
+    {
+      "source": "concept:ikhlas",
+      "target": "ruling:salah",
+      "type": "REQUIRED_IN",
+      "description": "Sincerity is required in prayer — it must be for Allah alone, not idols",
+      "sources": [
+        { "type": "quran", "ref": "108:2" },
+        { "type": "tafsir", "ref": "ibn-kathir:108:2" }
+      ]
+    },
+    {
+      "source": "concept:ikhlas",
+      "target": "ruling:nahr",
+      "type": "REQUIRED_IN",
+      "description": "Sincerity is required in sacrifice — it must be in Allah's name alone",
+      "sources": [
+        { "type": "quran", "ref": "108:2" },
+        { "type": "tafsir", "ref": "ibn-kathir:108:2" }
+      ]
+    },
+    {
+      "source": "person:al-aas-ibn-wail",
+      "target": "prophet:muhammad",
+      "type": "OPPOSED",
+      "description": "Al-'As ibn Wa'il insulted the Prophet by calling him 'the one cut off' (al-abtar)",
+      "sources": [
+        { "type": "quran", "ref": "108:3" },
+        { "type": "tafsir", "ref": "ibn-kathir:108:3" }
+      ]
+    },
+    {
+      "source": "person:abu-lahab",
+      "target": "prophet:muhammad",
+      "type": "OPPOSED",
+      "description": "Abu Lahab declared 'Muhammad is cut off' when the Prophet's son died",
+      "sources": [
+        { "type": "quran", "ref": "108:3" },
+        { "type": "tafsir", "ref": "ibn-kathir:108:3" }
+      ]
+    },
+    {
+      "source": "person:al-aas-ibn-wail",
+      "target": "nation:quraysh",
+      "type": "PART_OF",
+      "description": "Al-'As ibn Wa'il was a prominent disbeliever of Quraysh",
+      "sources": [
+        { "type": "tafsir", "ref": "ibn-kathir:108:3" }
+      ]
+    },
+    {
+      "source": "angel:jibril",
+      "target": "prophet:muhammad",
+      "type": "INFORMED",
+      "description": "Jibril informed the Prophet ﷺ that the river he saw was Al-Kawthar",
+      "sources": [
+        { "type": "quran", "ref": "108:1" },
+        { "type": "hadith", "ref": "bukhari:6580" }
+      ]
+    },
+    {
+      "source": "angel:jibril",
+      "target": "event:revelation-of-al-kawthar",
+      "type": "PARTICIPATED_IN",
+      "description": "Jibril brought down the revelation of Surah Al-Kawthar",
+      "sources": [
+        { "type": "quran", "ref": "108:1" },
+        { "type": "tafsir", "ref": "ibn-kathir:108:1" }
+      ]
+    },
+    {
+      "source": "prophet:muhammad",
+      "target": "event:isra-and-miraj",
+      "type": "PARTICIPATED_IN",
+      "description": "During the Night Journey, the Prophet ﷺ saw Al-Kawthar in Paradise",
+      "sources": [
+        { "type": "quran", "ref": "108:1" },
+        { "type": "hadith", "ref": "bukhari:6580" }
+      ]
+    },
+    {
+      "source": "afterlife-place:al-kawthar",
+      "target": "event:isra-and-miraj",
+      "type": "WITNESSED_DURING",
+      "description": "The Prophet ﷺ saw Al-Kawthar during the Night Journey and Ascension",
+      "sources": [
+        { "type": "quran", "ref": "108:1" },
+        { "type": "hadith", "ref": "bukhari:6580" }
+      ]
+    },
+    {
+      "source": "prophet:muhammad",
+      "target": "ayahgroup:108:1",
+      "type": "MENTIONED_IN",
+      "role": "primary",
+      "context": "Addressed directly as the recipient of Al-Kawthar"
+    },
+    {
+      "source": "afterlife-place:al-kawthar",
+      "target": "ayahgroup:108:1",
+      "type": "MENTIONED_IN",
+      "role": "primary",
+      "context": "Al-Kawthar is named as the great gift given to the Prophet ﷺ"
+    },
+    {
+      "source": "divine-attribute:allah",
+      "target": "ayahgroup:108:1",
+      "type": "MENTIONED_IN",
+      "role": "primary",
+      "context": "Allah is the giver of Al-Kawthar, using the royal 'We'"
+    },
+    {
+      "source": "afterlife-place:paradise",
+      "target": "ayahgroup:108:1",
+      "type": "MENTIONED_IN",
+      "role": "secondary",
+      "context": "Paradise is the location of Al-Kawthar as explained in tafsir"
+    },
+    {
+      "source": "afterlife-place:al-hawdh",
+      "target": "ayahgroup:108:1",
+      "type": "MENTIONED_IN",
+      "role": "secondary",
+      "context": "The Pool on the Day of Judgment is connected to Al-Kawthar in the hadith"
+    },
+    {
+      "source": "angel:jibril",
+      "target": "ayahgroup:108:1",
+      "type": "MENTIONED_IN",
+      "role": "secondary",
+      "context": "Jibril identified Al-Kawthar for the Prophet during the Night Journey"
+    },
+    {
+      "source": "event:isra-and-miraj",
+      "target": "ayahgroup:108:1",
+      "type": "MENTIONED_IN",
+      "role": "secondary",
+      "context": "The Prophet saw Al-Kawthar during the Night Journey"
+    },
+    {
+      "source": "event:revelation-of-al-kawthar",
+      "target": "ayahgroup:108:1",
+      "type": "MENTIONED_IN",
+      "role": "secondary",
+      "context": "The surah was revealed to the Prophet while he dozed in the mosque"
+    },
+    {
+      "source": "person:anas-ibn-malik",
+      "target": "ayahgroup:108:1",
+      "type": "MENTIONED_IN",
+      "role": "referenced",
+      "context": "Primary narrator of the hadiths about Al-Kawthar"
+    },
+    {
+      "source": "time-reference:day-of-judgment",
+      "target": "ayahgroup:108:1",
+      "type": "MENTIONED_IN",
+      "role": "secondary",
+      "context": "The Day when the Ummah will drink from the Pool of Al-Kawthar"
+    },
+    {
+      "source": "ruling:salah",
+      "target": "ayahgroup:108:2-3",
+      "type": "MENTIONED_IN",
+      "role": "primary",
+      "context": "Command to pray exclusively for Allah as gratitude for Al-Kawthar"
+    },
+    {
+      "source": "ruling:nahr",
+      "target": "ayahgroup:108:2-3",
+      "type": "MENTIONED_IN",
+      "role": "primary",
+      "context": "Command to sacrifice for Allah alone"
+    },
+    {
+      "source": "concept:ikhlas",
+      "target": "ayahgroup:108:2-3",
+      "type": "MENTIONED_IN",
+      "role": "primary",
+      "context": "Sincerity in worship is the core message — prayer and sacrifice for Allah alone, not idols"
+    },
+    {
+      "source": "concept:shukr",
+      "target": "ayahgroup:108:2-3",
+      "type": "MENTIONED_IN",
+      "role": "primary",
+      "context": "Prayer and sacrifice are commanded as expressions of gratitude for Al-Kawthar"
+    },
+    {
+      "source": "person:al-aas-ibn-wail",
+      "target": "ayahgroup:108:2-3",
+      "type": "MENTIONED_IN",
+      "role": "secondary",
+      "context": "Named as the one who called the Prophet 'al-abtar' — but he himself is the true abtar"
+    },
+    {
+      "source": "person:abu-lahab",
+      "target": "ayahgroup:108:2-3",
+      "type": "MENTIONED_IN",
+      "role": "secondary",
+      "context": "Said 'Muhammad is cut off' when the Prophet's son died"
+    },
+    {
+      "source": "prophet:muhammad",
+      "target": "ayahgroup:108:2-3",
+      "type": "MENTIONED_IN",
+      "role": "primary",
+      "context": "Addressed directly; his haters are declared to be the true ones cut off"
+    },
+    {
+      "source": "nation:quraysh",
+      "target": "ayahgroup:108:2-3",
+      "type": "MENTIONED_IN",
+      "role": "referenced",
+      "context": "Disbelievers of Quraysh mocked the Prophet as 'al-abtar'"
+    }
+  ]
+}

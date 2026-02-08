@@ -5,3 +5,4 @@ dist/
 *.db-journal
 .cache/
 data/books/*.epub
+*.log

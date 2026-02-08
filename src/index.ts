@@ -4,9 +4,11 @@ import { hadithRoutes } from "./routes/hadith";
 import { booksRoutes } from "./routes/books";
 import { authorsRoutes } from "./routes/authors";
 import { categoriesRoutes } from "./routes/categories";
+import { searchRoutes } from "./routes/search";
 
 const app = new Hono();
 
+app.route("/api/search", searchRoutes);
 app.route("/api/quran", quranRoutes);
 app.route("/api/hadith", hadithRoutes);
 app.route("/api/books", booksRoutes);

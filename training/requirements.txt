@@ -1,0 +1,4 @@
+sentence-transformers>=3.0.0
+torch>=2.0.0
+accelerate>=0.21.0
+datasets>=2.14.0

@@ -1,0 +1,389 @@
+{
+  "entities": [
+    {
+      "id": "divine-attribute:allah",
+      "type": "DivineAttribute",
+      "nameArabic": "الله",
+      "nameEnglish": "Allah",
+      "descriptionArabic": "الإله الواحد الأحد، رب العالمين",
+      "descriptionEnglish": "The One God, Lord of all creation",
+      "sources": [
+        { "type": "quran", "ref": "112:1" },
+        { "type": "quran", "ref": "112:2" },
+        { "type": "quran", "ref": "112:3" },
+        { "type": "quran", "ref": "112:4" },
+        { "type": "tafsir", "ref": "ibn-kathir:112:1" },
+        { "type": "tafsir", "ref": "ibn-kathir:112:2" },
+        { "type": "tafsir", "ref": "ibn-kathir:112:3" },
+        { "type": "tafsir", "ref": "ibn-kathir:112:4" },
+        { "type": "hadith", "ref": "bukhari:5013" },
+        { "type": "hadith", "ref": "muslim:811" }
+      ]
+    },
+    {
+      "id": "divine-attribute:al-ahad",
+      "type": "DivineAttribute",
+      "nameArabic": "الأحد",
+      "nameEnglish": "The One (Al-Ahad)",
+      "descriptionArabic": "اسم من أسماء الله تعالى يدل على وحدانيته المطلقة، لا نظير ولا شبيه ولا عديل له",
+      "descriptionEnglish": "A name of Allah indicating His absolute oneness — He has no peer, no likeness, and no equal",
+      "sources": [
+        { "type": "quran", "ref": "112:1" },
+        { "type": "tafsir", "ref": "ibn-kathir:112:1" },
+        { "type": "hadith", "ref": "bukhari:5013" },
+        { "type": "hadith", "ref": "muslim:811" }
+      ]
+    },
+    {
+      "id": "divine-attribute:as-samad",
+      "type": "DivineAttribute",
+      "nameArabic": "الصمد",
+      "nameEnglish": "The Eternal Refuge (As-Samad)",
+      "descriptionArabic": "السيد الذي كمل في سؤدده، الذي يصمد إليه الخلائق في حوائجهم، الذي لا جوف له",
+      "descriptionEnglish": "The Master who is perfect in His sovereignty, to whom all creation turns in need, the Self-Sufficient who has no hollow",
+      "sources": [
+        { "type": "quran", "ref": "112:2" },
+        { "type": "tafsir", "ref": "ibn-kathir:112:2" },
+        { "type": "hadith", "ref": "bukhari:5013" },
+        { "type": "hadith", "ref": "muslim:811" }
+      ]
+    },
+    {
+      "id": "prophet:muhammad",
+      "type": "Prophet",
+      "nameArabic": "محمد ﷺ",
+      "nameEnglish": "Muhammad ﷺ",
+      "descriptionArabic": "خاتم الأنبياء والمرسلين، أُمر بتبليغ التوحيد الخالص",
+      "descriptionEnglish": "The final Prophet and Messenger, commanded to convey pure monotheism",
+      "sources": [
+        { "type": "quran", "ref": "112:1" },
+        { "type": "tafsir", "ref": "ibn-kathir:112:1" },
+        { "type": "hadith", "ref": "bukhari:5013" },
+        { "type": "hadith", "ref": "muslim:811" }
+      ]
+    },
+    {
+      "id": "concept:tawhid",
+      "type": "Concept",
+      "nameArabic": "التوحيد",
+      "nameEnglish": "Monotheism (Tawhid)",
+      "descriptionArabic": "إفراد الله بالألوهية والعبادة، وتنزيهه عن الولد والوالد والكفء",
+      "descriptionEnglish": "The absolute oneness of Allah in divinity and worship, free from offspring, parentage, or equal",
+      "sources": [
+        { "type": "quran", "ref": "112:1" },
+        { "type": "quran", "ref": "112:2" },
+        { "type": "quran", "ref": "112:3" },
+        { "type": "quran", "ref": "112:4" },
+        { "type": "tafsir", "ref": "ibn-kathir:112:1" },
+        { "type": "hadith", "ref": "bukhari:5013" },
+        { "type": "hadith", "ref": "muslim:811" }
+      ]
+    },
+    {
+      "id": "concept:samadiyyah",
+      "type": "Concept",
+      "nameArabic": "الصمدية",
+      "nameEnglish": "Divine Self-Sufficiency (Samadiyyah)",
+      "descriptionArabic": "كمال الله في ذاته وصفاته واستغناؤه عن الخلق مع افتقارهم إليه",
+      "descriptionEnglish": "Allah's perfection in His essence and attributes, His independence from creation while all creation depends on Him",
+      "sources": [
+        { "type": "quran", "ref": "112:2" },
+        { "type": "tafsir", "ref": "ibn-kathir:112:2" }
+      ]
+    },
+    {
+      "id": "concept:tanzih",
+      "type": "Concept",
+      "nameArabic": "التنزيه",
+      "nameEnglish": "Divine Transcendence (Tanzih)",
+      "descriptionArabic": "تنزيه الله عما لا يليق به من الولد والوالد والشبيه والنظير",
+      "descriptionEnglish": "Declaring Allah free from what is unbefitting — offspring, parentage, likeness, or equal",
+      "sources": [
+        { "type": "quran", "ref": "112:3" },
+        { "type": "quran", "ref": "112:4" },
+        { "type": "tafsir", "ref": "ibn-kathir:112:3" },
+        { "type": "tafsir", "ref": "ibn-kathir:112:4" }
+      ]
+    },
+    {
+      "id": "scripture:quran",
+      "type": "Scripture",
+      "nameArabic": "القرآن",
+      "nameEnglish": "Quran",
+      "descriptionArabic": "كتاب الله المنزل على محمد ﷺ، سورة الإخلاص تعدل ثلثه",
+      "descriptionEnglish": "The Book of Allah revealed to Muhammad ﷺ; Surah Al-Ikhlas equals one-third of it",
+      "sources": [
+        { "type": "quran", "ref": "112:1" },
+        { "type": "hadith", "ref": "bukhari:5013" },
+        { "type": "hadith", "ref": "muslim:811" }
+      ]
+    },
+    {
+      "id": "nation:mushrikeen",
+      "type": "Nation",
+      "nameArabic": "المشركون",
+      "nameEnglish": "The Polytheists (Mushrikeen)",
+      "descriptionArabic": "الذين طلبوا من النبي ﷺ أن ينسب لهم ربه فنزلت سورة الإخلاص",
+      "descriptionEnglish": "Those who asked the Prophet ﷺ to describe his Lord's lineage, prompting the revelation of Surah Al-Ikhlas",
+      "sources": [
+        { "type": "quran", "ref": "112:1" },
+        { "type": "tafsir", "ref": "ibn-kathir:112:1" }
+      ]
+    },
+    {
+      "id": "nation:jews",
+      "type": "Nation",
+      "nameArabic": "اليهود",
+      "nameEnglish": "The Jews",
+      "descriptionArabic": "الذين قالوا نعبد عزيراً ابن الله",
+      "descriptionEnglish": "Those who said they worship Uzayr (Ezra) as a son of God",
+      "sources": [
+        { "type": "quran", "ref": "112:3" },
+        { "type": "tafsir", "ref": "ibn-kathir:112:3" }
+      ]
+    },
+    {
+      "id": "nation:christians",
+      "type": "Nation",
+      "nameArabic": "النصارى",
+      "nameEnglish": "The Christians",
+      "descriptionArabic": "الذين قالوا نعبد المسيح ابن الله",
+      "descriptionEnglish": "Those who said they worship the Messiah as a son of God",
+      "sources": [
+        { "type": "quran", "ref": "112:3" },
+        { "type": "tafsir", "ref": "ibn-kathir:112:3" }
+      ]
+    },
+    {
+      "id": "event:revelation-of-al-ikhlas",
+      "type": "Event",
+      "nameArabic": "نزول سورة الإخلاص",
+      "nameEnglish": "Revelation of Surah Al-Ikhlas",
+      "descriptionArabic": "نزلت رداً على المشركين حين طلبوا من النبي ﷺ أن ينسب لهم ربه",
+      "descriptionEnglish": "Revealed in response to the polytheists who asked the Prophet ﷺ to describe his Lord's lineage",
+      "sources": [
+        { "type": "quran", "ref": "112:1" },
+        { "type": "tafsir", "ref": "ibn-kathir:112:1" }
+      ]
+    },
+    {
+      "id": "person:ubayy-ibn-kaab",
+      "type": "Person",
+      "nameArabic": "أبي بن كعب",
+      "nameEnglish": "Ubayy ibn Ka'b",
+      "descriptionArabic": "صحابي جليل، روى سبب نزول سورة الإخلاص",
+      "descriptionEnglish": "Noble Companion, narrated the cause of revelation of Surah Al-Ikhlas",
+      "sources": [
+        { "type": "quran", "ref": "112:1" },
+        { "type": "tafsir", "ref": "ibn-kathir:112:1" }
+      ]
+    }
+  ],
+  "relationships": [
+    {
+      "source": "divine-attribute:al-ahad",
+      "target": "divine-attribute:allah",
+      "type": "ATTRIBUTE_OF",
+      "description": "Al-Ahad (The One) is an attribute and name of Allah affirming His absolute uniqueness",
+      "sources": [
+        { "type": "quran", "ref": "112:1" },
+        { "type": "tafsir", "ref": "ibn-kathir:112:1" }
+      ]
+    },
+    {
+      "source": "divine-attribute:as-samad",
+      "target": "divine-attribute:allah",
+      "type": "ATTRIBUTE_OF",
+      "description": "As-Samad (The Eternal Refuge) is an attribute and name of Allah affirming His self-sufficiency and perfection",
+      "sources": [
+        { "type": "quran", "ref": "112:2" },
+        { "type": "tafsir", "ref": "ibn-kathir:112:2" }
+      ]
+    },
+    {
+      "source": "concept:tawhid",
+      "target": "divine-attribute:al-ahad",
+      "type": "EXPRESSED_THROUGH",
+      "description": "Tawhid is expressed through the affirmation that Allah is Al-Ahad (The One)",
+      "sources": [
+        { "type": "quran", "ref": "112:1" }
+      ]
+    },
+    {
+      "source": "concept:samadiyyah",
+      "target": "divine-attribute:as-samad",
+      "type": "EXPRESSED_THROUGH",
+      "description": "Divine Self-Sufficiency is expressed through the name As-Samad",
+      "sources": [
+        { "type": "quran", "ref": "112:2" }
+      ]
+    },
+    {
+      "source": "concept:tanzih",
+      "target": "divine-attribute:allah",
+      "type": "APPLIED_TO",
+      "description": "Tanzih negates offspring, parentage, and any equal from Allah",
+      "sources": [
+        { "type": "quran", "ref": "112:3" },
+        { "type": "quran", "ref": "112:4" }
+      ]
+    },
+    {
+      "source": "scripture:quran",
+      "target": "prophet:muhammad",
+      "type": "REVEALED_TO",
+      "description": "The Quran was revealed to Prophet Muhammad ﷺ",
+      "sources": [
+        { "type": "quran", "ref": "112:1" },
+        { "type": "hadith", "ref": "bukhari:5013" },
+        { "type": "hadith", "ref": "muslim:811" }
+      ]
+    },
+    {
+      "source": "event:revelation-of-al-ikhlas",
+      "target": "nation:mushrikeen",
+      "type": "CAUSED_BY",
+      "description": "The polytheists' demand to describe Allah's lineage caused the revelation of this surah",
+      "sources": [
+        { "type": "tafsir", "ref": "ibn-kathir:112:1" }
+      ]
+    },
+    {
+      "source": "nation:mushrikeen",
+      "target": "concept:tawhid",
+      "type": "REJECTED",
+      "description": "The polytheists rejected pure monotheism by worshipping idols",
+      "sources": [
+        { "type": "quran", "ref": "112:1" },
+        { "type": "tafsir", "ref": "ibn-kathir:112:1" }
+      ]
+    },
+    {
+      "source": "nation:jews",
+      "target": "concept:tawhid",
+      "type": "DEVIATED_FROM",
+      "description": "The Jews deviated from pure monotheism by claiming Uzayr is the son of God",
+      "sources": [
+        { "type": "quran", "ref": "112:3" },
+        { "type": "tafsir", "ref": "ibn-kathir:112:3" }
+      ]
+    },
+    {
+      "source": "nation:christians",
+      "target": "concept:tawhid",
+      "type": "DEVIATED_FROM",
+      "description": "The Christians deviated from pure monotheism by claiming the Messiah is the son of God",
+      "sources": [
+        { "type": "quran", "ref": "112:3" },
+        { "type": "tafsir", "ref": "ibn-kathir:112:3" }
+      ]
+    },
+    {
+      "source": "divine-attribute:allah",
+      "target": "prophet:muhammad",
+      "type": "COMMANDED",
+      "description": "Allah commanded Muhammad ﷺ to say 'He is Allah, the One'",
+      "sources": [
+        { "type": "quran", "ref": "112:1" }
+      ]
+    },
+    {
+      "source": "divine-attribute:allah",
+      "target": "ayahgroup:112:1",
+      "type": "MENTIONED_IN",
+      "role": "primary",
+      "context": "Allah is declared to be The One (Ahad) — absolute uniqueness with no peer or likeness"
+    },
+    {
+      "source": "divine-attribute:al-ahad",
+      "target": "ayahgroup:112:1",
+      "type": "MENTIONED_IN",
+      "role": "primary",
+      "context": "The name Al-Ahad is explicitly stated — He is unique, not applied to anyone else in the affirmative"
+    },
+    {
+      "source": "concept:tawhid",
+      "target": "ayahgroup:112:1",
+      "type": "MENTIONED_IN",
+      "role": "primary",
+      "context": "The foundational declaration of pure monotheism: 'Say: He is Allah, the One'"
+    },
+    {
+      "source": "prophet:muhammad",
+      "target": "ayahgroup:112:1",
+      "type": "MENTIONED_IN",
+      "role": "primary",
+      "context": "Commanded to proclaim Allah's oneness with 'Say (Qul)'"
+    },
+    {
+      "source": "nation:mushrikeen",
+      "target": "ayahgroup:112:1",
+      "type": "MENTIONED_IN",
+      "role": "secondary",
+      "context": "Asked the Prophet to describe his Lord's lineage, prompting this revelation"
+    },
+    {
+      "source": "event:revelation-of-al-ikhlas",
+      "target": "ayahgroup:112:1",
+      "type": "MENTIONED_IN",
+      "role": "secondary",
+      "context": "The surah was revealed in response to demands to describe Allah's lineage"
+    },
+    {
+      "source": "person:ubayy-ibn-kaab",
+      "target": "ayahgroup:112:1",
+      "type": "MENTIONED_IN",
+      "role": "referenced",
+      "context": "Narrated the hadith about the cause of revelation"
+    },
+    {
+      "source": "scripture:quran",
+      "target": "ayahgroup:112:1",
+      "type": "MENTIONED_IN",
+      "role": "secondary",
+      "context": "Surah Al-Ikhlas equals one-third of the Quran in reward"
+    },
+    {
+      "source": "divine-attribute:as-samad",
+      "target": "ayahgroup:112:2-4",
+      "type": "MENTIONED_IN",
+      "role": "primary",
+      "context": "As-Samad is stated as Allah's attribute — the Self-Sufficient to whom all creation turns"
+    },
+    {
+      "source": "concept:samadiyyah",
+      "target": "ayahgroup:112:2-4",
+      "type": "MENTIONED_IN",
+      "role": "primary",
+      "context": "Divine Self-Sufficiency: Allah is As-Samad — perfect, self-sufficient, without hollow"
+    },
+    {
+      "source": "concept:tanzih",
+      "target": "ayahgroup:112:2-4",
+      "type": "MENTIONED_IN",
+      "role": "primary",
+      "context": "Allah is free from having offspring ('He begets not'), parents ('nor was He begotten'), or equals"
+    },
+    {
+      "source": "divine-attribute:allah",
+      "target": "ayahgroup:112:2-4",
+      "type": "MENTIONED_IN",
+      "role": "primary",
+      "context": "Allah is As-Samad, did not beget nor was begotten, and has no equal"
+    },
+    {
+      "source": "nation:jews",
+      "target": "ayahgroup:112:2-4",
+      "type": "MENTIONED_IN",
+      "role": "referenced",
+      "context": "Their claim that Uzayr is son of God is implicitly refuted by 'He begets not'"
+    },
+    {
+      "source": "nation:christians",
+      "target": "ayahgroup:112:2-4",
+      "type": "MENTIONED_IN",
+      "role": "referenced",
+      "context": "Their claim that the Messiah is son of God is implicitly refuted by 'He begets not'"
+    }
+  ]
+}

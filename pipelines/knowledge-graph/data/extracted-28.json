@@ -1,0 +1,1514 @@
+{
+  "entities": [
+    {
+      "id": "prophet:moses",
+      "type": "Prophet",
+      "nameArabic": "موسى عليه السلام",
+      "nameEnglish": "Moses (Musa)",
+      "descriptionArabic": "نبي أرسله الله إلى فرعون وبني إسرائيل، نشأ في بيت فرعون ثم فر إلى مدين ثم عاد برسالة الله",
+      "descriptionEnglish": "Prophet sent by Allah to Pharaoh and the Children of Israel, raised in Pharaoh's household, fled to Midian, then returned with Allah's message",
+      "sources": [
+        { "type": "quran", "ref": "28:1-3" },
+        { "type": "quran", "ref": "28:14" },
+        { "type": "quran", "ref": "28:7" },
+        { "type": "quran", "ref": "28:15" },
+        { "type": "quran", "ref": "28:21" },
+        { "type": "quran", "ref": "28:23" },
+        { "type": "quran", "ref": "28:29" },
+        { "type": "quran", "ref": "28:30" },
+        { "type": "quran", "ref": "28:31" },
+        { "type": "quran", "ref": "28:32" },
+        { "type": "quran", "ref": "28:34" },
+        { "type": "quran", "ref": "28:36-37" },
+        { "type": "quran", "ref": "28:43" },
+        { "type": "tafsir", "ref": "ibn-kathir:28:3" },
+        { "type": "tafsir", "ref": "ibn-kathir:28:7" },
+        { "type": "tafsir", "ref": "ibn-kathir:28:14" },
+        { "type": "tafsir", "ref": "ibn-kathir:28:30" },
+        { "type": "hadith", "ref": "bukhari:3394" },
+        { "type": "hadith", "ref": "bukhari:3407" }
+      ]
+    },
+    {
+      "id": "prophet:harun",
+      "type": "Prophet",
+      "nameArabic": "هارون عليه السلام",
+      "nameEnglish": "Aaron (Harun)",
+      "descriptionArabic": "أخو موسى، أرسله الله معه وزيراً ومعيناً في تبليغ الرسالة لفرعون",
+      "descriptionEnglish": "Brother of Moses, sent by Allah as his minister and helper in delivering the message to Pharaoh",
+      "sources": [
+        { "type": "quran", "ref": "28:34" },
+        { "type": "quran", "ref": "28:35" },
+        { "type": "tafsir", "ref": "ibn-kathir:28:34" }
+      ]
+    },
+    {
+      "id": "prophet:ibrahim",
+      "type": "Prophet",
+      "nameArabic": "إبراهيم عليه السلام",
+      "nameEnglish": "Abraham (Ibrahim)",
+      "descriptionArabic": "خليل الله، بشّر بأن من ذريته من يكون هلاك ملك مصر على يديه",
+      "descriptionEnglish": "The Friend of Allah (Khalil), foretold that from his lineage would come one who would cause the downfall of Egypt's king",
+      "sources": [
+        { "type": "quran", "ref": "28:4" },
+        { "type": "tafsir", "ref": "ibn-kathir:28:4" }
+      ]
+    },
+    {
+      "id": "prophet:muhammad",
+      "type": "Prophet",
+      "nameArabic": "محمد ﷺ",
+      "nameEnglish": "Muhammad ﷺ",
+      "descriptionArabic": "خاتم الأنبياء، المخاطب في سورة القصص بقصة موسى للعبرة والتثبيت",
+      "descriptionEnglish": "The final Prophet, addressed in Surah Al-Qasas with the story of Moses for lesson and reassurance",
+      "sources": [
+        { "type": "quran", "ref": "28:44" },
+        { "type": "quran", "ref": "28:45" },
+        { "type": "quran", "ref": "28:46" },
+        { "type": "quran", "ref": "28:85" },
+        { "type": "tafsir", "ref": "ibn-kathir:28:44" },
+        { "type": "tafsir", "ref": "ibn-kathir:28:85" }
+      ]
+    },
+    {
+      "id": "person:pharaoh",
+      "type": "Person",
+      "nameArabic": "فرعون",
+      "nameEnglish": "Pharaoh",
+      "descriptionArabic": "ملك مصر الجبار المتكبر الذي استعبد بني إسرائيل وذبّح أبناءهم وادعى الألوهية",
+      "descriptionEnglish": "The tyrannical king of Egypt who enslaved the Children of Israel, slaughtered their sons, and claimed divinity",
+      "sources": [
+        { "type": "quran", "ref": "28:1-3" },
+        { "type": "quran", "ref": "28:4" },
+        { "type": "quran", "ref": "28:6" },
+        { "type": "quran", "ref": "28:8" },
+        { "type": "quran", "ref": "28:38" },
+        { "type": "quran", "ref": "28:39" },
+        { "type": "quran", "ref": "28:40" },
+        { "type": "quran", "ref": "28:41" },
+        { "type": "tafsir", "ref": "ibn-kathir:28:4" },
+        { "type": "tafsir", "ref": "ibn-kathir:28:38" },
+        { "type": "tafsir", "ref": "ibn-kathir:28:40" },
+        { "type": "hadith", "ref": "bukhari:3394" }
+      ]
+    },
+    {
+      "id": "person:haman",
+      "type": "Person",
+      "nameArabic": "هامان",
+      "nameEnglish": "Haman",
+      "descriptionArabic": "وزير فرعون، أمره فرعون ببناء صرح ليطلع إلى إله موسى",
+      "descriptionEnglish": "Pharaoh's minister, commanded by Pharaoh to build a tower to reach the God of Moses",
+      "sources": [
+        { "type": "quran", "ref": "28:6" },
+        { "type": "quran", "ref": "28:8" },
+        { "type": "quran", "ref": "28:38" },
+        { "type": "tafsir", "ref": "ibn-kathir:28:6" },
+        { "type": "tafsir", "ref": "ibn-kathir:28:38" }
+      ]
+    },
+    {
+      "id": "person:asiyah",
+      "type": "Person",
+      "nameArabic": "آسية بنت مزاحم",
+      "nameEnglish": "Asiyah wife of Pharaoh",
+      "descriptionArabic": "امرأة فرعون، التقطت موسى من النهر وأقنعت فرعون بتبنيه، آمنت بالله",
+      "descriptionEnglish": "Wife of Pharaoh, rescued baby Moses from the river and convinced Pharaoh to adopt him, believed in Allah",
+      "sources": [
+        { "type": "quran", "ref": "28:9" },
+        { "type": "tafsir", "ref": "ibn-kathir:28:9" }
+      ]
+    },
+    {
+      "id": "person:mother-of-moses",
+      "type": "Person",
+      "nameArabic": "أم موسى",
+      "nameEnglish": "Mother of Moses",
+      "descriptionArabic": "أوحى الله إليها أن ترضعه وتلقيه في اليم، ردّه الله إليها فأرضعته بأجر",
+      "descriptionEnglish": "Divinely inspired to nurse Moses and cast him into the river; Allah returned him to her and she nursed him for wages",
+      "sources": [
+        { "type": "quran", "ref": "28:7" },
+        { "type": "quran", "ref": "28:10" },
+        { "type": "quran", "ref": "28:12" },
+        { "type": "quran", "ref": "28:13" },
+        { "type": "tafsir", "ref": "ibn-kathir:28:7" },
+        { "type": "tafsir", "ref": "ibn-kathir:28:10" },
+        { "type": "tafsir", "ref": "ibn-kathir:28:13" }
+      ]
+    },
+    {
+      "id": "person:sister-of-moses",
+      "type": "Person",
+      "nameArabic": "أخت موسى",
+      "nameEnglish": "Sister of Moses",
+      "descriptionArabic": "تتبعت أثر موسى حين ألقي في النهر ودلت آل فرعون على أمها لإرضاعه",
+      "descriptionEnglish": "Tracked baby Moses after he was cast into the river and guided Pharaoh's household to her mother to nurse him",
+      "sources": [
+        { "type": "quran", "ref": "28:11" },
+        { "type": "quran", "ref": "28:12" },
+        { "type": "tafsir", "ref": "ibn-kathir:28:11" }
+      ]
+    },
+    {
+      "id": "person:qarun",
+      "type": "Person",
+      "nameArabic": "قارون",
+      "nameEnglish": "Qarun (Korah)",
+      "descriptionArabic": "من قوم موسى، آتاه الله كنوزاً عظيمة فبغى وتكبر فخسف الله به وبداره الأرض",
+      "descriptionEnglish": "From the people of Moses, given immense treasures by Allah but became arrogant, so Allah caused the earth to swallow him and his dwelling",
+      "sources": [
+        { "type": "quran", "ref": "28:76" },
+        { "type": "quran", "ref": "28:77" },
+        { "type": "quran", "ref": "28:78" },
+        { "type": "quran", "ref": "28:79" },
+        { "type": "quran", "ref": "28:81" },
+        { "type": "quran", "ref": "28:82" },
+        { "type": "tafsir", "ref": "ibn-kathir:28:76" },
+        { "type": "tafsir", "ref": "ibn-kathir:28:81" }
+      ]
+    },
+    {
+      "id": "person:shuayb",
+      "type": "Prophet",
+      "nameArabic": "شعيب عليه السلام",
+      "nameEnglish": "Shu'ayb (Jethro)",
+      "descriptionArabic": "الشيخ الكبير في مدين الذي زوّج موسى ابنته مقابل أن يأجره ثماني حجج",
+      "descriptionEnglish": "The elder of Midian who married his daughter to Moses in exchange for eight years of service",
+      "sources": [
+        { "type": "quran", "ref": "28:25" },
+        { "type": "quran", "ref": "28:26" },
+        { "type": "quran", "ref": "28:27" },
+        { "type": "quran", "ref": "28:28" },
+        { "type": "tafsir", "ref": "ibn-kathir:28:25" },
+        { "type": "tafsir", "ref": "ibn-kathir:28:27" }
+      ]
+    },
+    {
+      "id": "person:daughter-of-shuayb",
+      "type": "Person",
+      "nameArabic": "ابنة شعيب (زوجة موسى)",
+      "nameEnglish": "Daughter of Shu'ayb (wife of Moses)",
+      "descriptionArabic": "إحدى ابنتي شعيب، تزوجها موسى بعد أن سقى لهما، قالت عنه إنه القوي الأمين",
+      "descriptionEnglish": "One of Shu'ayb's two daughters, married Moses after he watered their flock, described him as strong and trustworthy",
+      "sources": [
+        { "type": "quran", "ref": "28:23" },
+        { "type": "quran", "ref": "28:25" },
+        { "type": "quran", "ref": "28:26" },
+        { "type": "quran", "ref": "28:27" },
+        { "type": "tafsir", "ref": "ibn-kathir:28:25" },
+        { "type": "tafsir", "ref": "ibn-kathir:28:26" }
+      ]
+    },
+    {
+      "id": "person:believing-man",
+      "type": "Person",
+      "nameArabic": "الرجل الناصح",
+      "nameEnglish": "The Believing Man (Warner)",
+      "descriptionArabic": "رجل جاء من أقصى المدينة يسعى لينذر موسى بأن الملأ يأتمرون به ليقتلوه",
+      "descriptionEnglish": "A man who came running from the far end of the city to warn Moses that the chiefs were plotting to kill him",
+      "sources": [
+        { "type": "quran", "ref": "28:20" },
+        { "type": "tafsir", "ref": "ibn-kathir:28:20" }
+      ]
+    },
+    {
+      "id": "divine-attribute:allah",
+      "type": "DivineAttribute",
+      "nameArabic": "الله",
+      "nameEnglish": "Allah",
+      "descriptionArabic": "رب العالمين، منزل الكتاب ومرسل الرسل ومهلك الظالمين",
+      "descriptionEnglish": "Lord of all creation, revealer of the Book, sender of messengers, and destroyer of oppressors",
+      "sources": [
+        { "type": "quran", "ref": "28:1-3" },
+        { "type": "quran", "ref": "28:5" },
+        { "type": "quran", "ref": "28:7" },
+        { "type": "quran", "ref": "28:30" },
+        { "type": "quran", "ref": "28:38" },
+        { "type": "quran", "ref": "28:40" },
+        { "type": "quran", "ref": "28:68" },
+        { "type": "quran", "ref": "28:70" },
+        { "type": "quran", "ref": "28:88" }
+      ]
+    },
+    {
+      "id": "divine-attribute:al-ghafur",
+      "type": "DivineAttribute",
+      "nameArabic": "الغفور الرحيم",
+      "nameEnglish": "The Forgiving, The Merciful (Al-Ghafur Ar-Rahim)",
+      "descriptionArabic": "من أسماء الله، غفر لموسى حين استغفره بعد قتل القبطي",
+      "descriptionEnglish": "Names of Allah; He forgave Moses when he sought forgiveness after killing the Copt",
+      "sources": [
+        { "type": "quran", "ref": "28:16" },
+        { "type": "tafsir", "ref": "ibn-kathir:28:16" }
+      ]
+    },
+    {
+      "id": "nation:bani-israel",
+      "type": "Nation",
+      "nameArabic": "بنو إسرائيل",
+      "nameEnglish": "Children of Israel (Bani Israel)",
+      "descriptionArabic": "القوم الذين استضعفهم فرعون وذبّح أبناءهم، أرسل الله إليهم موسى لتحريرهم",
+      "descriptionEnglish": "The people oppressed by Pharaoh who slaughtered their sons; Allah sent Moses to liberate them",
+      "sources": [
+        { "type": "quran", "ref": "28:4" },
+        { "type": "quran", "ref": "28:5" },
+        { "type": "quran", "ref": "28:6" },
+        { "type": "tafsir", "ref": "ibn-kathir:28:4" },
+        { "type": "tafsir", "ref": "ibn-kathir:28:5" }
+      ]
+    },
+    {
+      "id": "nation:copts",
+      "type": "Nation",
+      "nameArabic": "القبط",
+      "nameEnglish": "The Copts (Egyptians)",
+      "descriptionArabic": "أهل مصر من أتباع فرعون الذين استعبدوا بني إسرائيل",
+      "descriptionEnglish": "The Egyptian people, followers of Pharaoh who enslaved the Children of Israel",
+      "sources": [
+        { "type": "quran", "ref": "28:15" },
+        { "type": "tafsir", "ref": "ibn-kathir:28:15" }
+      ]
+    },
+    {
+      "id": "nation:people-of-midian",
+      "type": "Nation",
+      "nameArabic": "أهل مدين",
+      "nameEnglish": "People of Midian",
+      "descriptionArabic": "أهل مدين الذين عاش موسى بينهم وتزوج منهم",
+      "descriptionEnglish": "The people of Midian among whom Moses lived and from whom he married",
+      "sources": [
+        { "type": "quran", "ref": "28:22" },
+        { "type": "quran", "ref": "28:23" },
+        { "type": "quran", "ref": "28:25" },
+        { "type": "tafsir", "ref": "ibn-kathir:28:22" },
+        { "type": "tafsir", "ref": "ibn-kathir:28:23" }
+      ]
+    },
+    {
+      "id": "place:egypt",
+      "type": "Place",
+      "nameArabic": "مصر",
+      "nameEnglish": "Egypt",
+      "descriptionArabic": "أرض فرعون حيث استُعبد بنو إسرائيل ونشأ موسى",
+      "descriptionEnglish": "The land of Pharaoh where the Children of Israel were enslaved and Moses was raised",
+      "sources": [
+        { "type": "quran", "ref": "28:4" },
+        { "type": "quran", "ref": "28:8" },
+        { "type": "quran", "ref": "28:15" },
+        { "type": "quran", "ref": "28:21" },
+        { "type": "tafsir", "ref": "ibn-kathir:28:4" }
+      ]
+    },
+    {
+      "id": "place:midian",
+      "type": "Place",
+      "nameArabic": "مدين",
+      "nameEnglish": "Midian",
+      "descriptionArabic": "البلد الذي فرّ إليه موسى من مصر وعاش فيه ثماني أو عشر سنين",
+      "descriptionEnglish": "The land where Moses fled from Egypt and lived for eight or ten years",
+      "sources": [
+        { "type": "quran", "ref": "28:22" },
+        { "type": "quran", "ref": "28:23" },
+        { "type": "quran", "ref": "28:45" },
+        { "type": "tafsir", "ref": "ibn-kathir:28:22" }
+      ]
+    },
+    {
+      "id": "place:valley-of-tuwa",
+      "type": "Place",
+      "nameArabic": "الوادي المقدس طوى",
+      "nameEnglish": "The Sacred Valley of Tuwa",
+      "descriptionArabic": "الوادي الذي ناجى الله فيه موسى عند الشجرة من جانب الطور الأيمن",
+      "descriptionEnglish": "The sacred valley where Allah spoke to Moses at the tree on the right side of Mount Tur",
+      "sources": [
+        { "type": "quran", "ref": "28:30" },
+        { "type": "tafsir", "ref": "ibn-kathir:28:30" }
+      ]
+    },
+    {
+      "id": "place:mount-tur",
+      "type": "Place",
+      "nameArabic": "جانب الطور الأيمن",
+      "nameEnglish": "The Right Side of Mount Tur (Sinai)",
+      "descriptionArabic": "المكان الذي رأى فيه موسى النار وكلمه الله منها",
+      "descriptionEnglish": "The location where Moses saw the fire and Allah spoke to him from it",
+      "sources": [
+        { "type": "quran", "ref": "28:29" },
+        { "type": "quran", "ref": "28:30" },
+        { "type": "quran", "ref": "28:44" },
+        { "type": "quran", "ref": "28:46" },
+        { "type": "tafsir", "ref": "ibn-kathir:28:29" },
+        { "type": "tafsir", "ref": "ibn-kathir:28:44" }
+      ]
+    },
+    {
+      "id": "place:red-sea",
+      "type": "Place",
+      "nameArabic": "اليمّ (البحر)",
+      "nameEnglish": "The Sea (the Nile / the Red Sea)",
+      "descriptionArabic": "ألقي فيه موسى رضيعاً، وأغرق الله فيه فرعون وجنوده",
+      "descriptionEnglish": "Baby Moses was cast into it; Pharaoh and his army were drowned in it",
+      "sources": [
+        { "type": "quran", "ref": "28:7" },
+        { "type": "quran", "ref": "28:40" },
+        { "type": "tafsir", "ref": "ibn-kathir:28:7" },
+        { "type": "tafsir", "ref": "ibn-kathir:28:40" }
+      ]
+    },
+    {
+      "id": "place:sarh-pharaoh",
+      "type": "Place",
+      "nameArabic": "صرح فرعون",
+      "nameEnglish": "Pharaoh's Tower (Sarh)",
+      "descriptionArabic": "بناء أمر فرعون هامان ببنائه من الطوب المحروق ليطلع إلى إله موسى",
+      "descriptionEnglish": "A tower Pharaoh commanded Haman to build from baked bricks to reach the God of Moses",
+      "sources": [
+        { "type": "quran", "ref": "28:38" },
+        { "type": "tafsir", "ref": "ibn-kathir:28:38" }
+      ]
+    },
+    {
+      "id": "event:casting-of-baby-moses",
+      "type": "Event",
+      "nameArabic": "إلقاء موسى في اليمّ",
+      "nameEnglish": "Casting of Baby Moses into the River",
+      "descriptionArabic": "أم موسى ألقت رضيعها في النهر بوحي من الله خوفاً من ذبّاحي فرعون",
+      "descriptionEnglish": "Moses' mother cast her baby into the river by divine inspiration, fearing Pharaoh's executioners",
+      "sources": [
+        { "type": "quran", "ref": "28:7" },
+        { "type": "tafsir", "ref": "ibn-kathir:28:7" }
+      ]
+    },
+    {
+      "id": "event:adoption-by-pharaoh",
+      "type": "Event",
+      "nameArabic": "التقاط آل فرعون لموسى",
+      "nameEnglish": "Adoption of Moses by Pharaoh's Household",
+      "descriptionArabic": "التقط آل فرعون موسى من النهر وتبنته آسية، ليكون لهم عدواً وحزناً بقدر الله",
+      "descriptionEnglish": "Pharaoh's household picked up Moses from the river and Asiyah adopted him — destined by Allah to become their enemy",
+      "sources": [
+        { "type": "quran", "ref": "28:8" },
+        { "type": "quran", "ref": "28:9" },
+        { "type": "tafsir", "ref": "ibn-kathir:28:8" },
+        { "type": "tafsir", "ref": "ibn-kathir:28:9" }
+      ]
+    },
+    {
+      "id": "event:return-to-mother",
+      "type": "Event",
+      "nameArabic": "رد موسى إلى أمه",
+      "nameEnglish": "Return of Moses to His Mother",
+      "descriptionArabic": "حرّم الله على موسى المراضع فأرشدت أخته آل فرعون إلى أمه فأرضعته",
+      "descriptionEnglish": "Allah made Moses refuse all wet-nurses; his sister guided Pharaoh's household to his mother, who nursed him",
+      "sources": [
+        { "type": "quran", "ref": "28:12" },
+        { "type": "quran", "ref": "28:13" },
+        { "type": "tafsir", "ref": "ibn-kathir:28:12" },
+        { "type": "tafsir", "ref": "ibn-kathir:28:13" }
+      ]
+    },
+    {
+      "id": "event:killing-the-copt",
+      "type": "Event",
+      "nameArabic": "قتل القبطي",
+      "nameEnglish": "Killing of the Copt",
+      "descriptionArabic": "دخل موسى المدينة فوجد إسرائيلياً يتقاتل مع قبطي فوكز القبطي فقضى عليه",
+      "descriptionEnglish": "Moses entered the city and found an Israelite fighting a Copt; he struck the Copt and killed him",
+      "sources": [
+        { "type": "quran", "ref": "28:15" },
+        { "type": "quran", "ref": "28:16" },
+        { "type": "quran", "ref": "28:17" },
+        { "type": "quran", "ref": "28:18-19" },
+        { "type": "tafsir", "ref": "ibn-kathir:28:15" }
+      ]
+    },
+    {
+      "id": "event:flight-to-midian",
+      "type": "Event",
+      "nameArabic": "فرار موسى إلى مدين",
+      "nameEnglish": "Flight of Moses to Midian",
+      "descriptionArabic": "فرّ موسى من مصر خائفاً بعد أن علم فرعون بقتله القبطي",
+      "descriptionEnglish": "Moses fled Egypt in fear after Pharaoh learned of the killing of the Copt",
+      "sources": [
+        { "type": "quran", "ref": "28:20" },
+        { "type": "quran", "ref": "28:21" },
+        { "type": "quran", "ref": "28:22" },
+        { "type": "tafsir", "ref": "ibn-kathir:28:21" }
+      ]
+    },
+    {
+      "id": "event:watering-at-midian",
+      "type": "Event",
+      "nameArabic": "سقي موسى لابنتي شعيب",
+      "nameEnglish": "Moses Watering the Flock of Shu'ayb's Daughters",
+      "descriptionArabic": "وجد موسى امرأتين تذودان عن الماء فسقى لهما ثم تولى إلى الظل",
+      "descriptionEnglish": "Moses found two women holding back their flock from the water; he watered for them, then withdrew to shade",
+      "sources": [
+        { "type": "quran", "ref": "28:23" },
+        { "type": "quran", "ref": "28:24" },
+        { "type": "tafsir", "ref": "ibn-kathir:28:23" }
+      ]
+    },
+    {
+      "id": "event:marriage-of-moses",
+      "type": "Event",
+      "nameArabic": "زواج موسى من ابنة شعيب",
+      "nameEnglish": "Marriage of Moses to Shu'ayb's Daughter",
+      "descriptionArabic": "زوّج شعيب موسى إحدى ابنتيه مقابل أجره ثماني حجج",
+      "descriptionEnglish": "Shu'ayb married his daughter to Moses in exchange for eight years of service",
+      "sources": [
+        { "type": "quran", "ref": "28:27" },
+        { "type": "quran", "ref": "28:28" },
+        { "type": "quran", "ref": "28:29" },
+        { "type": "tafsir", "ref": "ibn-kathir:28:27" }
+      ]
+    },
+    {
+      "id": "event:burning-bush",
+      "type": "Event",
+      "nameArabic": "مناجاة الله لموسى عند النار",
+      "nameEnglish": "Allah's Address to Moses at the Fire",
+      "descriptionArabic": "رأى موسى ناراً عند جانب الطور فلما أتاها نودي من الشجرة وكلمه الله وأعطاه آياته",
+      "descriptionEnglish": "Moses saw a fire at Mount Tur; when he approached, Allah called him from the tree, spoke to him, and gave him signs",
+      "sources": [
+        { "type": "quran", "ref": "28:29" },
+        { "type": "quran", "ref": "28:30" },
+        { "type": "quran", "ref": "28:31" },
+        { "type": "quran", "ref": "28:32" },
+        { "type": "tafsir", "ref": "ibn-kathir:28:29" },
+        { "type": "tafsir", "ref": "ibn-kathir:28:30" }
+      ]
+    },
+    {
+      "id": "event:pharaoh-drowning",
+      "type": "Event",
+      "nameArabic": "إغراق فرعون وجنوده",
+      "nameEnglish": "Drowning of Pharaoh and His Army",
+      "descriptionArabic": "أهلك الله فرعون وجنوده بالإغراق في البحر عقاباً على كفرهم وطغيانهم",
+      "descriptionEnglish": "Allah destroyed Pharaoh and his army by drowning them in the sea as punishment for their disbelief and tyranny",
+      "sources": [
+        { "type": "quran", "ref": "28:40" },
+        { "type": "quran", "ref": "28:41" },
+        { "type": "quran", "ref": "28:42" },
+        { "type": "tafsir", "ref": "ibn-kathir:28:40" },
+        { "type": "hadith", "ref": "bukhari:3394" }
+      ]
+    },
+    {
+      "id": "event:destruction-of-qarun",
+      "type": "Event",
+      "nameArabic": "خسف الله بقارون",
+      "nameEnglish": "Destruction of Qarun (Earth Swallowing)",
+      "descriptionArabic": "خسف الله بقارون وبداره الأرض عقاباً على بغيه وكبره",
+      "descriptionEnglish": "Allah caused the earth to swallow Qarun and his dwelling as punishment for his arrogance and transgression",
+      "sources": [
+        { "type": "quran", "ref": "28:81" },
+        { "type": "quran", "ref": "28:82" },
+        { "type": "tafsir", "ref": "ibn-kathir:28:81" }
+      ]
+    },
+    {
+      "id": "event:exodus-of-bani-israel",
+      "type": "Event",
+      "nameArabic": "خروج بني إسرائيل من مصر",
+      "nameEnglish": "Exodus of the Children of Israel",
+      "descriptionArabic": "خروج بني إسرائيل من مصر بقيادة موسى بعد سنين الاستعباد",
+      "descriptionEnglish": "The departure of the Children of Israel from Egypt under Moses' leadership after years of enslavement",
+      "sources": [
+        { "type": "quran", "ref": "28:5" },
+        { "type": "quran", "ref": "28:6" },
+        { "type": "quran", "ref": "28:40" },
+        { "type": "tafsir", "ref": "ibn-kathir:28:5" },
+        { "type": "tafsir", "ref": "ibn-kathir:28:6" }
+      ]
+    },
+    {
+      "id": "event:slaughter-of-sons",
+      "type": "Event",
+      "nameArabic": "ذبح أبناء بني إسرائيل",
+      "nameEnglish": "Slaughter of the Sons of Bani Israel",
+      "descriptionArabic": "أمر فرعون بذبح أبناء بني إسرائيل واستحياء نسائهم خوفاً من النبي الموعود",
+      "descriptionEnglish": "Pharaoh ordered the killing of Israelite boys and sparing their women, fearing the prophesied deliverer",
+      "sources": [
+        { "type": "quran", "ref": "28:4" },
+        { "type": "tafsir", "ref": "ibn-kathir:28:4" }
+      ]
+    },
+    {
+      "id": "object:staff-of-moses",
+      "type": "Object",
+      "nameArabic": "عصا موسى",
+      "nameEnglish": "Staff of Moses",
+      "descriptionArabic": "العصا التي ألقاها موسى فصارت حية تسعى، آية من آيات الله",
+      "descriptionEnglish": "The staff Moses cast down and it became a living serpent — a sign from Allah",
+      "sources": [
+        { "type": "quran", "ref": "28:31" },
+        { "type": "tafsir", "ref": "ibn-kathir:28:31" }
+      ]
+    },
+    {
+      "id": "object:white-hand",
+      "type": "Object",
+      "nameArabic": "اليد البيضاء",
+      "nameEnglish": "The White Hand (Radiant Hand)",
+      "descriptionArabic": "يد موسى حين أدخلها في جيبه خرجت بيضاء تتلألأ من غير سوء، آية من الله",
+      "descriptionEnglish": "Moses' hand, when placed in his cloak, emerged white and radiant without disease — a sign from Allah",
+      "sources": [
+        { "type": "quran", "ref": "28:32" },
+        { "type": "tafsir", "ref": "ibn-kathir:28:32" }
+      ]
+    },
+    {
+      "id": "object:tabut",
+      "type": "Object",
+      "nameArabic": "التابوت",
+      "nameEnglish": "The Chest (Ark)",
+      "descriptionArabic": "الصندوق الذي وضعت فيه أم موسى رضيعها قبل إلقائه في النهر",
+      "descriptionEnglish": "The chest in which Moses' mother placed her baby before casting him into the river",
+      "sources": [
+        { "type": "quran", "ref": "28:7" },
+        { "type": "tafsir", "ref": "ibn-kathir:28:7" }
+      ]
+    },
+    {
+      "id": "scripture:torah",
+      "type": "Scripture",
+      "nameArabic": "التوراة",
+      "nameEnglish": "Torah",
+      "descriptionArabic": "الكتاب الذي أنزله الله على موسى هدى ورحمة",
+      "descriptionEnglish": "The Book revealed by Allah to Moses as guidance and mercy",
+      "sources": [
+        { "type": "quran", "ref": "28:43" },
+        { "type": "quran", "ref": "28:48" },
+        { "type": "tafsir", "ref": "ibn-kathir:28:43" }
+      ]
+    },
+    {
+      "id": "scripture:quran",
+      "type": "Scripture",
+      "nameArabic": "القرآن (الكتاب المبين)",
+      "nameEnglish": "Quran (The Clear Book)",
+      "descriptionArabic": "الكتاب المبين الذي نزلت فيه سورة القصص بقصة موسى وفرعون بالحق",
+      "descriptionEnglish": "The Clear Book in which Surah Al-Qasas was revealed telling the story of Moses and Pharaoh in truth",
+      "sources": [
+        { "type": "quran", "ref": "28:1-3" },
+        { "type": "quran", "ref": "28:49" },
+        { "type": "quran", "ref": "28:85" },
+        { "type": "tafsir", "ref": "ibn-kathir:28:2" }
+      ]
+    },
+    {
+      "id": "concept:tawakkul",
+      "type": "Concept",
+      "nameArabic": "التوكل على الله",
+      "nameEnglish": "Reliance on Allah (Tawakkul)",
+      "descriptionArabic": "الاعتماد على الله والثقة بوعده، كما فعلت أم موسى حين ألقته في اليمّ",
+      "descriptionEnglish": "Trusting in Allah and His promise, as Moses' mother did when she cast him into the river",
+      "sources": [
+        { "type": "quran", "ref": "28:7" },
+        { "type": "quran", "ref": "28:21" },
+        { "type": "quran", "ref": "28:24" },
+        { "type": "tafsir", "ref": "ibn-kathir:28:7" }
+      ]
+    },
+    {
+      "id": "concept:istidraj",
+      "type": "Concept",
+      "nameArabic": "الاستكبار والبغي",
+      "nameEnglish": "Arrogance and Transgression",
+      "descriptionArabic": "التكبر في الأرض والبغي بغير الحق، كما فعل فرعون وقارون",
+      "descriptionEnglish": "Arrogance on earth and transgression without right, as exemplified by Pharaoh and Qarun",
+      "sources": [
+        { "type": "quran", "ref": "28:39" },
+        { "type": "quran", "ref": "28:76" },
+        { "type": "quran", "ref": "28:78" },
+        { "type": "quran", "ref": "28:83" },
+        { "type": "tafsir", "ref": "ibn-kathir:28:76" },
+        { "type": "tafsir", "ref": "ibn-kathir:28:83" }
+      ]
+    },
+    {
+      "id": "concept:divine-qadr",
+      "type": "Concept",
+      "nameArabic": "القدر الإلهي",
+      "nameEnglish": "Divine Decree (Qadr)",
+      "descriptionArabic": "قدر الله الذي لا يُردّ: نشّأ موسى في بيت فرعون رغم محاولته قتل أبناء بني إسرائيل",
+      "descriptionEnglish": "Allah's irrevocable decree: Moses was raised in Pharaoh's own house despite his attempts to kill Israelite sons",
+      "sources": [
+        { "type": "quran", "ref": "28:5" },
+        { "type": "quran", "ref": "28:6" },
+        { "type": "quran", "ref": "28:8" },
+        { "type": "tafsir", "ref": "ibn-kathir:28:5" },
+        { "type": "tafsir", "ref": "ibn-kathir:28:8" }
+      ]
+    },
+    {
+      "id": "concept:sabr",
+      "type": "Concept",
+      "nameArabic": "الصبر",
+      "nameEnglish": "Patience (Sabr)",
+      "descriptionArabic": "صبر أم موسى وصبر بني إسرائيل على استضعاف فرعون",
+      "descriptionEnglish": "The patience of Moses' mother and the patience of the Children of Israel under Pharaoh's oppression",
+      "sources": [
+        { "type": "quran", "ref": "28:10" },
+        { "type": "quran", "ref": "28:13" },
+        { "type": "quran", "ref": "28:54" },
+        { "type": "tafsir", "ref": "ibn-kathir:28:10" }
+      ]
+    },
+    {
+      "id": "time-reference:day-of-judgment",
+      "type": "TimeReference",
+      "nameArabic": "يوم القيامة",
+      "nameEnglish": "Day of Judgment",
+      "descriptionArabic": "اليوم الذي لا ينفع فيه مال ولا بنون إلا من أتى الله بقلب سليم",
+      "descriptionEnglish": "The Day when neither wealth nor children will avail, except one who comes to Allah with a sound heart",
+      "sources": [
+        { "type": "quran", "ref": "28:41" },
+        { "type": "quran", "ref": "28:42" },
+        { "type": "quran", "ref": "28:61" },
+        { "type": "quran", "ref": "28:62" },
+        { "type": "quran", "ref": "28:74" },
+        { "type": "tafsir", "ref": "ibn-kathir:28:41" },
+        { "type": "tafsir", "ref": "ibn-kathir:28:61" }
+      ]
+    },
+    {
+      "id": "place:makkah",
+      "type": "Place",
+      "nameArabic": "مكة",
+      "nameEnglish": "Makkah (Mecca)",
+      "descriptionArabic": "البلد الحرام الذي نزل فيه القرآن على محمد ﷺ وراده الله إليه",
+      "descriptionEnglish": "The sacred city where the Quran was revealed to Muhammad ﷺ and to which Allah promised to return him",
+      "sources": [
+        { "type": "quran", "ref": "28:57" },
+        { "type": "quran", "ref": "28:85" },
+        { "type": "tafsir", "ref": "ibn-kathir:28:57" },
+        { "type": "tafsir", "ref": "ibn-kathir:28:85" }
+      ]
+    }
+  ],
+  "relationships": [
+    {
+      "source": "prophet:moses",
+      "target": "person:pharaoh",
+      "type": "SENT_TO",
+      "description": "Moses was sent by Allah as a messenger to Pharaoh",
+      "sources": [
+        { "type": "quran", "ref": "28:32" },
+        { "type": "quran", "ref": "28:36-37" },
+        { "type": "quran", "ref": "28:38" }
+      ]
+    },
+    {
+      "source": "prophet:moses",
+      "target": "person:asiyah",
+      "type": "ADOPTED_BY",
+      "description": "Asiyah wife of Pharaoh convinced Pharaoh to adopt baby Moses",
+      "sources": [
+        { "type": "quran", "ref": "28:8" },
+        { "type": "quran", "ref": "28:9" }
+      ]
+    },
+    {
+      "source": "prophet:moses",
+      "target": "person:mother-of-moses",
+      "type": "CHILD_OF",
+      "description": "Moses is the son of his mother who received divine inspiration to save him",
+      "sources": [
+        { "type": "quran", "ref": "28:7" },
+        { "type": "quran", "ref": "28:13" }
+      ]
+    },
+    {
+      "source": "prophet:moses",
+      "target": "person:sister-of-moses",
+      "type": "SIBLING_OF",
+      "description": "Moses' sister tracked him and arranged his return to their mother",
+      "sources": [
+        { "type": "quran", "ref": "28:11" },
+        { "type": "quran", "ref": "28:12" }
+      ]
+    },
+    {
+      "source": "prophet:moses",
+      "target": "prophet:harun",
+      "type": "SIBLING_OF",
+      "description": "Aaron is Moses' brother, sent with him as a helper",
+      "sources": [
+        { "type": "quran", "ref": "28:34" },
+        { "type": "quran", "ref": "28:35" }
+      ]
+    },
+    {
+      "source": "prophet:moses",
+      "target": "person:daughter-of-shuayb",
+      "type": "MARRIED",
+      "description": "Moses married one of Shu'ayb's daughters after serving him for eight years",
+      "sources": [
+        { "type": "quran", "ref": "28:27" },
+        { "type": "quran", "ref": "28:28" },
+        { "type": "quran", "ref": "28:29" }
+      ]
+    },
+    {
+      "source": "prophet:moses",
+      "target": "person:shuayb",
+      "type": "SERVED",
+      "description": "Moses served Shu'ayb for eight or ten years as agreed for the marriage",
+      "sources": [
+        { "type": "quran", "ref": "28:27" },
+        { "type": "quran", "ref": "28:28" },
+        { "type": "quran", "ref": "28:29" }
+      ]
+    },
+    {
+      "source": "prophet:moses",
+      "target": "nation:bani-israel",
+      "type": "SENT_TO",
+      "description": "Moses was sent as a prophet and liberator to the Children of Israel",
+      "sources": [
+        { "type": "quran", "ref": "28:3" },
+        { "type": "quran", "ref": "28:5" }
+      ]
+    },
+    {
+      "source": "person:pharaoh",
+      "target": "prophet:moses",
+      "type": "OPPOSED",
+      "description": "Pharaoh rejected Moses' message, tried to kill him, and persecuted his followers",
+      "sources": [
+        { "type": "quran", "ref": "28:36" },
+        { "type": "quran", "ref": "28:37" },
+        { "type": "quran", "ref": "28:38" },
+        { "type": "quran", "ref": "28:39" }
+      ]
+    },
+    {
+      "source": "person:pharaoh",
+      "target": "nation:bani-israel",
+      "type": "OPPRESSED",
+      "description": "Pharaoh enslaved the Children of Israel, slaughtered their sons, and spared their women",
+      "sources": [
+        { "type": "quran", "ref": "28:4" }
+      ]
+    },
+    {
+      "source": "person:pharaoh",
+      "target": "person:haman",
+      "type": "COMMANDED",
+      "description": "Pharaoh commanded Haman to build a tower to reach the God of Moses",
+      "sources": [
+        { "type": "quran", "ref": "28:38" }
+      ]
+    },
+    {
+      "source": "person:pharaoh",
+      "target": "place:egypt",
+      "type": "RULED",
+      "description": "Pharaoh was the tyrannical ruler of Egypt",
+      "sources": [
+        { "type": "quran", "ref": "28:4" },
+        { "type": "quran", "ref": "28:38" },
+        { "type": "quran", "ref": "28:39" }
+      ]
+    },
+    {
+      "source": "person:haman",
+      "target": "person:pharaoh",
+      "type": "SERVED",
+      "description": "Haman was Pharaoh's chief minister who carried out his commands",
+      "sources": [
+        { "type": "quran", "ref": "28:6" },
+        { "type": "quran", "ref": "28:8" },
+        { "type": "quran", "ref": "28:38" }
+      ]
+    },
+    {
+      "source": "person:haman",
+      "target": "place:sarh-pharaoh",
+      "type": "BUILT",
+      "description": "Haman built Pharaoh's tower from baked bricks at his command",
+      "sources": [
+        { "type": "quran", "ref": "28:38" }
+      ]
+    },
+    {
+      "source": "person:asiyah",
+      "target": "person:pharaoh",
+      "type": "SPOUSE_OF",
+      "description": "Asiyah was the wife of Pharaoh",
+      "sources": [
+        { "type": "quran", "ref": "28:9" }
+      ]
+    },
+    {
+      "source": "person:asiyah",
+      "target": "divine-attribute:allah",
+      "type": "BELIEVED_IN",
+      "description": "Asiyah believed in Allah, guided to faith through raising Moses",
+      "sources": [
+        { "type": "quran", "ref": "28:9" }
+      ]
+    },
+    {
+      "source": "person:qarun",
+      "target": "nation:bani-israel",
+      "type": "PART_OF",
+      "description": "Qarun was from the people of Moses (Children of Israel)",
+      "sources": [
+        { "type": "quran", "ref": "28:76" }
+      ]
+    },
+    {
+      "source": "person:qarun",
+      "target": "concept:istidraj",
+      "type": "EXEMPLIFIED",
+      "description": "Qarun exemplified arrogance and transgression through his pride in his wealth",
+      "sources": [
+        { "type": "quran", "ref": "28:76" },
+        { "type": "quran", "ref": "28:78" }
+      ]
+    },
+    {
+      "source": "person:pharaoh",
+      "target": "concept:istidraj",
+      "type": "EXEMPLIFIED",
+      "description": "Pharaoh exemplified arrogance by claiming divinity and oppressing people",
+      "sources": [
+        { "type": "quran", "ref": "28:38" },
+        { "type": "quran", "ref": "28:39" }
+      ]
+    },
+    {
+      "source": "person:daughter-of-shuayb",
+      "target": "person:shuayb",
+      "type": "CHILD_OF",
+      "description": "She was one of Shu'ayb's two daughters",
+      "sources": [
+        { "type": "quran", "ref": "28:23" },
+        { "type": "quran", "ref": "28:25" },
+        { "type": "quran", "ref": "28:27" }
+      ]
+    },
+    {
+      "source": "person:believing-man",
+      "target": "prophet:moses",
+      "type": "WARNED",
+      "description": "Came running to warn Moses that the chiefs were plotting to kill him",
+      "sources": [
+        { "type": "quran", "ref": "28:20" }
+      ]
+    },
+    {
+      "source": "person:mother-of-moses",
+      "target": "concept:tawakkul",
+      "type": "EXEMPLIFIED",
+      "description": "Moses' mother exemplified trust in Allah by casting her baby into the river on His promise",
+      "sources": [
+        { "type": "quran", "ref": "28:7" }
+      ]
+    },
+    {
+      "source": "person:mother-of-moses",
+      "target": "concept:sabr",
+      "type": "EXEMPLIFIED",
+      "description": "Moses' mother exemplified patience in enduring the fear and separation from her child",
+      "sources": [
+        { "type": "quran", "ref": "28:10" },
+        { "type": "quran", "ref": "28:13" }
+      ]
+    },
+    {
+      "source": "divine-attribute:allah",
+      "target": "prophet:moses",
+      "type": "SPOKE_TO",
+      "description": "Allah directly spoke to Moses at the burning bush in the sacred valley",
+      "sources": [
+        { "type": "quran", "ref": "28:30" },
+        { "type": "quran", "ref": "28:31" },
+        { "type": "quran", "ref": "28:32" },
+        { "type": "quran", "ref": "28:35" }
+      ]
+    },
+    {
+      "source": "divine-attribute:allah",
+      "target": "person:mother-of-moses",
+      "type": "INSPIRED",
+      "description": "Allah inspired Moses' mother to nurse him and cast him into the river",
+      "sources": [
+        { "type": "quran", "ref": "28:7" }
+      ]
+    },
+    {
+      "source": "divine-attribute:allah",
+      "target": "person:pharaoh",
+      "type": "DESTROYED",
+      "description": "Allah destroyed Pharaoh and his army by drowning them in the sea",
+      "sources": [
+        { "type": "quran", "ref": "28:40" }
+      ]
+    },
+    {
+      "source": "divine-attribute:allah",
+      "target": "person:qarun",
+      "type": "DESTROYED",
+      "description": "Allah caused the earth to swallow Qarun and his dwelling",
+      "sources": [
+        { "type": "quran", "ref": "28:81" }
+      ]
+    },
+    {
+      "source": "scripture:torah",
+      "target": "prophet:moses",
+      "type": "REVEALED_TO",
+      "description": "The Torah was revealed to Moses as guidance and mercy",
+      "sources": [
+        { "type": "quran", "ref": "28:43" }
+      ]
+    },
+    {
+      "source": "scripture:quran",
+      "target": "prophet:muhammad",
+      "type": "REVEALED_TO",
+      "description": "The Quran containing Surah Al-Qasas was revealed to Muhammad ﷺ",
+      "sources": [
+        { "type": "quran", "ref": "28:2" },
+        { "type": "quran", "ref": "28:85" },
+        { "type": "quran", "ref": "28:86" }
+      ]
+    },
+    {
+      "source": "object:staff-of-moses",
+      "target": "prophet:moses",
+      "type": "GIVEN_TO",
+      "description": "The staff was given to Moses as a miraculous sign — it turned into a serpent",
+      "sources": [
+        { "type": "quran", "ref": "28:31" }
+      ]
+    },
+    {
+      "source": "object:white-hand",
+      "target": "prophet:moses",
+      "type": "GIVEN_TO",
+      "description": "The radiant white hand was given to Moses as a second miraculous sign",
+      "sources": [
+        { "type": "quran", "ref": "28:32" }
+      ]
+    },
+    {
+      "source": "object:tabut",
+      "target": "event:casting-of-baby-moses",
+      "type": "USED_IN",
+      "description": "Moses' mother placed him in the chest before casting him into the river",
+      "sources": [
+        { "type": "quran", "ref": "28:7" }
+      ]
+    },
+    {
+      "source": "event:casting-of-baby-moses",
+      "target": "place:red-sea",
+      "type": "OCCURRED_AT",
+      "description": "Baby Moses was cast into the Nile river",
+      "sources": [
+        { "type": "quran", "ref": "28:7" }
+      ]
+    },
+    {
+      "source": "event:adoption-by-pharaoh",
+      "target": "event:casting-of-baby-moses",
+      "type": "RESULTED_FROM",
+      "description": "Pharaoh's household found Moses after he was cast into the river",
+      "sources": [
+        { "type": "quran", "ref": "28:8" }
+      ]
+    },
+    {
+      "source": "event:adoption-by-pharaoh",
+      "target": "concept:divine-qadr",
+      "type": "EXEMPLIFIED",
+      "description": "Moses raised by the very person who sought to kill Israelite boys — illustrating divine decree",
+      "sources": [
+        { "type": "quran", "ref": "28:8" },
+        { "type": "quran", "ref": "28:9" }
+      ]
+    },
+    {
+      "source": "event:killing-the-copt",
+      "target": "event:flight-to-midian",
+      "type": "CAUSED",
+      "description": "The killing of the Copt forced Moses to flee Egypt to avoid execution",
+      "sources": [
+        { "type": "quran", "ref": "28:15" },
+        { "type": "quran", "ref": "28:19-20" },
+        { "type": "quran", "ref": "28:21" }
+      ]
+    },
+    {
+      "source": "event:flight-to-midian",
+      "target": "place:midian",
+      "type": "DESTINATION",
+      "description": "Moses fled to Midian from Egypt",
+      "sources": [
+        { "type": "quran", "ref": "28:22" }
+      ]
+    },
+    {
+      "source": "event:watering-at-midian",
+      "target": "event:marriage-of-moses",
+      "type": "LED_TO",
+      "description": "Moses watering the flock led to meeting Shu'ayb and marrying his daughter",
+      "sources": [
+        { "type": "quran", "ref": "28:23" },
+        { "type": "quran", "ref": "28:25" },
+        { "type": "quran", "ref": "28:27" }
+      ]
+    },
+    {
+      "source": "event:watering-at-midian",
+      "target": "place:midian",
+      "type": "OCCURRED_AT",
+      "description": "Moses watered the flock at the well of Midian",
+      "sources": [
+        { "type": "quran", "ref": "28:23" }
+      ]
+    },
+    {
+      "source": "event:burning-bush",
+      "target": "place:valley-of-tuwa",
+      "type": "OCCURRED_AT",
+      "description": "Allah addressed Moses at the fire in the sacred valley near Mount Tur",
+      "sources": [
+        { "type": "quran", "ref": "28:30" }
+      ]
+    },
+    {
+      "source": "event:burning-bush",
+      "target": "place:mount-tur",
+      "type": "OCCURRED_AT",
+      "description": "The divine address took place on the right side of Mount Tur",
+      "sources": [
+        { "type": "quran", "ref": "28:29" },
+        { "type": "quran", "ref": "28:30" }
+      ]
+    },
+    {
+      "source": "event:slaughter-of-sons",
+      "target": "person:pharaoh",
+      "type": "COMMANDED_BY",
+      "description": "Pharaoh ordered the slaughter of Israelite boys",
+      "sources": [
+        { "type": "quran", "ref": "28:4" }
+      ]
+    },
+    {
+      "source": "event:slaughter-of-sons",
+      "target": "event:casting-of-baby-moses",
+      "type": "CAUSED",
+      "description": "The slaughter campaign forced Moses' mother to cast him into the river",
+      "sources": [
+        { "type": "quran", "ref": "28:4" },
+        { "type": "quran", "ref": "28:7" }
+      ]
+    },
+    {
+      "source": "event:pharaoh-drowning",
+      "target": "place:red-sea",
+      "type": "OCCURRED_AT",
+      "description": "Pharaoh and his army were drowned in the sea",
+      "sources": [
+        { "type": "quran", "ref": "28:40" }
+      ]
+    },
+    {
+      "source": "event:pharaoh-drowning",
+      "target": "event:exodus-of-bani-israel",
+      "type": "RESULTED_FROM",
+      "description": "Pharaoh pursued the fleeing Children of Israel and was drowned",
+      "sources": [
+        { "type": "quran", "ref": "28:40" },
+        { "type": "quran", "ref": "28:41" }
+      ]
+    },
+    {
+      "source": "event:destruction-of-qarun",
+      "target": "concept:istidraj",
+      "type": "RESULTED_FROM",
+      "description": "Qarun's arrogance and transgression brought about his destruction",
+      "sources": [
+        { "type": "quran", "ref": "28:76" },
+        { "type": "quran", "ref": "28:78" },
+        { "type": "quran", "ref": "28:81" }
+      ]
+    },
+    {
+      "source": "prophet:harun",
+      "target": "prophet:moses",
+      "type": "ASSISTED",
+      "description": "Aaron assisted Moses in conveying the message to Pharaoh as his minister",
+      "sources": [
+        { "type": "quran", "ref": "28:34" },
+        { "type": "quran", "ref": "28:35" }
+      ]
+    },
+    {
+      "source": "divine-attribute:al-ghafur",
+      "target": "divine-attribute:allah",
+      "type": "ATTRIBUTE_OF",
+      "description": "The Forgiving, The Merciful — attributes of Allah who forgave Moses",
+      "sources": [
+        { "type": "quran", "ref": "28:16" }
+      ]
+    },
+    {
+      "source": "prophet:moses",
+      "target": "ayahgroup:28:1-3",
+      "type": "MENTIONED_IN",
+      "role": "primary",
+      "context": "Introduction: Allah recounts the story of Moses and Pharaoh in truth"
+    },
+    {
+      "source": "person:pharaoh",
+      "target": "ayahgroup:28:1-3",
+      "type": "MENTIONED_IN",
+      "role": "primary",
+      "context": "Introduction: the story of Moses and Pharaoh"
+    },
+    {
+      "source": "scripture:quran",
+      "target": "ayahgroup:28:1-3",
+      "type": "MENTIONED_IN",
+      "role": "primary",
+      "context": "The Quran described as the Clear Book recounting this story"
+    },
+    {
+      "source": "person:pharaoh",
+      "target": "ayahgroup:28:4",
+      "type": "MENTIONED_IN",
+      "role": "primary",
+      "context": "Pharaoh's tyranny described: he divided the people, oppressed a group, slaughtered their sons"
+    },
+    {
+      "source": "nation:bani-israel",
+      "target": "ayahgroup:28:4",
+      "type": "MENTIONED_IN",
+      "role": "primary",
+      "context": "The oppressed people whose sons were slaughtered"
+    },
+    {
+      "source": "event:slaughter-of-sons",
+      "target": "ayahgroup:28:4",
+      "type": "MENTIONED_IN",
+      "role": "primary",
+      "context": "Pharaoh slaughtered the sons and spared the women"
+    },
+    {
+      "source": "nation:bani-israel",
+      "target": "ayahgroup:28:5",
+      "type": "MENTIONED_IN",
+      "role": "primary",
+      "context": "Allah's will to favor the oppressed and make them leaders and inheritors"
+    },
+    {
+      "source": "concept:divine-qadr",
+      "target": "ayahgroup:28:5",
+      "type": "MENTIONED_IN",
+      "role": "primary",
+      "context": "Allah's will overrides Pharaoh's plans: He will favor the oppressed"
+    },
+    {
+      "source": "person:pharaoh",
+      "target": "ayahgroup:28:6",
+      "type": "MENTIONED_IN",
+      "role": "primary",
+      "context": "Allah will show Pharaoh and Haman what they feared from the Children of Israel"
+    },
+    {
+      "source": "person:haman",
+      "target": "ayahgroup:28:6",
+      "type": "MENTIONED_IN",
+      "role": "primary",
+      "context": "Haman mentioned alongside Pharaoh as those who will see what they feared"
+    },
+    {
+      "source": "person:mother-of-moses",
+      "target": "ayahgroup:28:7",
+      "type": "MENTIONED_IN",
+      "role": "primary",
+      "context": "Allah inspired her to nurse Moses and cast him into the river"
+    },
+    {
+      "source": "event:casting-of-baby-moses",
+      "target": "ayahgroup:28:7",
+      "type": "MENTIONED_IN",
+      "role": "primary",
+      "context": "The divine command to cast baby Moses into the river"
+    },
+    {
+      "source": "concept:tawakkul",
+      "target": "ayahgroup:28:7",
+      "type": "MENTIONED_IN",
+      "role": "primary",
+      "context": "Allah's promise: do not fear or grieve, We will return him and make him a messenger"
+    },
+    {
+      "source": "event:adoption-by-pharaoh",
+      "target": "ayahgroup:28:8",
+      "type": "MENTIONED_IN",
+      "role": "primary",
+      "context": "Pharaoh's household picked up Moses — destined to be their enemy and grief"
+    },
+    {
+      "source": "concept:divine-qadr",
+      "target": "ayahgroup:28:8",
+      "type": "MENTIONED_IN",
+      "role": "primary",
+      "context": "Divine irony: Pharaoh adopted the very person who would bring his downfall"
+    },
+    {
+      "source": "person:asiyah",
+      "target": "ayahgroup:28:9",
+      "type": "MENTIONED_IN",
+      "role": "primary",
+      "context": "Asiyah pleaded to spare baby Moses: 'a comfort to me and you — do not kill him'"
+    },
+    {
+      "source": "person:mother-of-moses",
+      "target": "ayahgroup:28:10",
+      "type": "MENTIONED_IN",
+      "role": "primary",
+      "context": "Her heart became empty of everything except worry for Moses"
+    },
+    {
+      "source": "person:sister-of-moses",
+      "target": "ayahgroup:28:11",
+      "type": "MENTIONED_IN",
+      "role": "primary",
+      "context": "Sent by her mother to follow Moses' trail; watched him from a distance"
+    },
+    {
+      "source": "event:return-to-mother",
+      "target": "ayahgroup:28:12",
+      "type": "MENTIONED_IN",
+      "role": "primary",
+      "context": "Moses refused all wet-nurses; his sister offered to guide them to a suitable household"
+    },
+    {
+      "source": "event:return-to-mother",
+      "target": "ayahgroup:28:13",
+      "type": "MENTIONED_IN",
+      "role": "primary",
+      "context": "Allah returned Moses to his mother to comfort her and prove His promise true"
+    },
+    {
+      "source": "prophet:moses",
+      "target": "ayahgroup:28:14",
+      "type": "MENTIONED_IN",
+      "role": "primary",
+      "context": "Moses reached maturity and was given wisdom and knowledge"
+    },
+    {
+      "source": "event:killing-the-copt",
+      "target": "ayahgroup:28:15",
+      "type": "MENTIONED_IN",
+      "role": "primary",
+      "context": "Moses entered the city and struck the Copt, killing him"
+    },
+    {
+      "source": "nation:copts",
+      "target": "ayahgroup:28:15",
+      "type": "MENTIONED_IN",
+      "role": "secondary",
+      "context": "The killed man was a Copt (Egyptian), enemy of the Israelite"
+    },
+    {
+      "source": "divine-attribute:al-ghafur",
+      "target": "ayahgroup:28:16",
+      "type": "MENTIONED_IN",
+      "role": "primary",
+      "context": "Moses sought forgiveness and Allah forgave him — He is the Forgiving, Merciful"
+    },
+    {
+      "source": "person:believing-man",
+      "target": "ayahgroup:28:20",
+      "type": "MENTIONED_IN",
+      "role": "primary",
+      "context": "A man came running to warn Moses that the chiefs were plotting to kill him"
+    },
+    {
+      "source": "event:flight-to-midian",
+      "target": "ayahgroup:28:21",
+      "type": "MENTIONED_IN",
+      "role": "primary",
+      "context": "Moses fled Egypt in fear, praying for Allah to save him from the oppressors"
+    },
+    {
+      "source": "place:midian",
+      "target": "ayahgroup:28:22",
+      "type": "MENTIONED_IN",
+      "role": "primary",
+      "context": "Moses headed toward Midian, hoping his Lord would guide him"
+    },
+    {
+      "source": "event:watering-at-midian",
+      "target": "ayahgroup:28:23",
+      "type": "MENTIONED_IN",
+      "role": "primary",
+      "context": "Moses found people watering and two women holding back; he watered for them"
+    },
+    {
+      "source": "person:daughter-of-shuayb",
+      "target": "ayahgroup:28:25",
+      "type": "MENTIONED_IN",
+      "role": "primary",
+      "context": "One of the two daughters came to Moses walking shyly, inviting him to her father"
+    },
+    {
+      "source": "person:shuayb",
+      "target": "ayahgroup:28:25",
+      "type": "MENTIONED_IN",
+      "role": "primary",
+      "context": "The father (identified as Shu'ayb by scholars) invited Moses and rewarded him"
+    },
+    {
+      "source": "event:marriage-of-moses",
+      "target": "ayahgroup:28:27",
+      "type": "MENTIONED_IN",
+      "role": "primary",
+      "context": "Shu'ayb offered to marry one of his daughters to Moses for eight years of service"
+    },
+    {
+      "source": "event:burning-bush",
+      "target": "ayahgroup:28:29",
+      "type": "MENTIONED_IN",
+      "role": "primary",
+      "context": "After completing the term, Moses saw a fire at Mount Tur and went to investigate"
+    },
+    {
+      "source": "place:valley-of-tuwa",
+      "target": "ayahgroup:28:30",
+      "type": "MENTIONED_IN",
+      "role": "primary",
+      "context": "Allah called Moses from the right side of the valley at the blessed spot by the tree"
+    },
+    {
+      "source": "object:staff-of-moses",
+      "target": "ayahgroup:28:31",
+      "type": "MENTIONED_IN",
+      "role": "primary",
+      "context": "Allah commanded Moses to throw his staff; it became a serpent"
+    },
+    {
+      "source": "object:white-hand",
+      "target": "ayahgroup:28:32",
+      "type": "MENTIONED_IN",
+      "role": "primary",
+      "context": "Allah commanded Moses to put his hand in his cloak; it came out white and radiant"
+    },
+    {
+      "source": "prophet:harun",
+      "target": "ayahgroup:28:34",
+      "type": "MENTIONED_IN",
+      "role": "primary",
+      "context": "Moses asked Allah to send Aaron with him as a helper and more eloquent speaker"
+    },
+    {
+      "source": "person:pharaoh",
+      "target": "ayahgroup:28:38",
+      "type": "MENTIONED_IN",
+      "role": "primary",
+      "context": "Pharaoh claimed to know no other god for the people and commanded Haman to build a tower"
+    },
+    {
+      "source": "place:sarh-pharaoh",
+      "target": "ayahgroup:28:38",
+      "type": "MENTIONED_IN",
+      "role": "primary",
+      "context": "Pharaoh commanded Haman to build a tower to reach the God of Moses"
+    },
+    {
+      "source": "event:pharaoh-drowning",
+      "target": "ayahgroup:28:40",
+      "type": "MENTIONED_IN",
+      "role": "primary",
+      "context": "Allah seized Pharaoh and his armies and cast them into the sea"
+    },
+    {
+      "source": "scripture:torah",
+      "target": "ayahgroup:28:43",
+      "type": "MENTIONED_IN",
+      "role": "primary",
+      "context": "After destroying earlier generations, Allah gave Moses the Torah as guidance"
+    },
+    {
+      "source": "place:mount-tur",
+      "target": "ayahgroup:28:44",
+      "type": "MENTIONED_IN",
+      "role": "secondary",
+      "context": "Muhammad ﷺ was not at the western side of Tur when Moses was commissioned"
+    },
+    {
+      "source": "prophet:muhammad",
+      "target": "ayahgroup:28:44",
+      "type": "MENTIONED_IN",
+      "role": "primary",
+      "context": "Addressed directly: you were not present at Tur, but Allah informs you through revelation"
+    },
+    {
+      "source": "place:makkah",
+      "target": "ayahgroup:28:57",
+      "type": "MENTIONED_IN",
+      "role": "primary",
+      "context": "The Quraysh claimed following guidance would snatch them from their land — but Makkah is a safe sanctuary"
+    },
+    {
+      "source": "person:qarun",
+      "target": "ayahgroup:28:76",
+      "type": "MENTIONED_IN",
+      "role": "primary",
+      "context": "Qarun was from Moses' people but transgressed; given treasures whose keys burdened a group of strong men"
+    },
+    {
+      "source": "event:destruction-of-qarun",
+      "target": "ayahgroup:28:81",
+      "type": "MENTIONED_IN",
+      "role": "primary",
+      "context": "Allah caused the earth to swallow Qarun and his dwelling — no group could help him"
+    },
+    {
+      "source": "concept:istidraj",
+      "target": "ayahgroup:28:76",
+      "type": "MENTIONED_IN",
+      "role": "primary",
+      "context": "Qarun's arrogance exemplified — told not to exult, for Allah loves not the exultant"
+    },
+    {
+      "source": "concept:divine-qadr",
+      "target": "ayahgroup:28:6",
+      "type": "MENTIONED_IN",
+      "role": "primary",
+      "context": "Allah shows Pharaoh and Haman exactly what they feared — divine decree prevails"
+    },
+    {
+      "source": "time-reference:day-of-judgment",
+      "target": "ayahgroup:28:41",
+      "type": "MENTIONED_IN",
+      "role": "secondary",
+      "context": "Pharaoh and his chiefs made leaders inviting to the Fire; on the Day of Judgment they will not be helped"
+    },
+    {
+      "source": "place:egypt",
+      "target": "ayahgroup:28:4",
+      "type": "MENTIONED_IN",
+      "role": "secondary",
+      "context": "The land where Pharaoh exalted himself and divided the people"
+    },
+    {
+      "source": "prophet:ibrahim",
+      "target": "ayahgroup:28:4",
+      "type": "MENTIONED_IN",
+      "role": "referenced",
+      "context": "Ibn Kathir mentions Abraham's prophecy about the destruction of Egypt's king through his lineage"
+    }
+  ]
+}
