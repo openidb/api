@@ -5,7 +5,8 @@
     "dev": "bun --watch src/index.ts",
     "start": "bun src/index.ts",
     "db:migrate": "bunx prisma migrate deploy",
-    "db:push": "bunx prisma db push"
+    "db:push": "bunx prisma db push",
+    "test": "bun test"
   },
   "dependencies": {
     "@elastic/elasticsearch": "^9.3.0",
