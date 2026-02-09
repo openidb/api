@@ -1,12 +1,19 @@
 # --- Stage 1: Install dependencies ---
-FROM oven/bun:1 AS deps
+FROM oven/bun:1-debian AS deps
 WORKDIR /app
+
+# Native build tools for better-sqlite3
+RUN apt-get update && apt-get install -y python3 build-essential && rm -rf /var/lib/apt/lists/*
+
 COPY package.json bun.lock* ./
 RUN bun install --frozen-lockfile --production
 
 # --- Stage 2: Build/prepare ---
-FROM oven/bun:1 AS builder
+FROM oven/bun:1-debian AS builder
 WORKDIR /app
+
+RUN apt-get update && apt-get install -y python3 build-essential && rm -rf /var/lib/apt/lists/*
+
 COPY package.json bun.lock* ./
 RUN bun install --frozen-lockfile
 COPY . .

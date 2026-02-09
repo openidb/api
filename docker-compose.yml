@@ -8,7 +8,7 @@ services:
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
-      POSTGRES_DB: openislamicdb
+      POSTGRES_DB: arabic_texts_library
     ports:
       - "127.0.0.1:5433:5432"
     volumes:
@@ -28,7 +28,7 @@ services:
     volumes:
       - qdrant_data:/qdrant/storage
     healthcheck:
-      test: ["CMD-SHELL", "wget -qO- http://localhost:6333/healthz || exit 1"]
+      test: ["CMD-SHELL", "bash -c ':> /dev/tcp/localhost/6333' || exit 1"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -84,7 +84,7 @@ services:
       - "127.0.0.1:4000:4000"
     env_file: .env
     environment:
-      DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD}@db:5432/openislamicdb
+      DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD}@db:5432/arabic_texts_library
       QDRANT_URL: http://qdrant:6333
       ELASTICSEARCH_URL: http://elasticsearch:9200
       NEO4J_URI: bolt://neo4j:7687
@@ -99,7 +99,7 @@ services:
       neo4j:
         condition: service_healthy
     healthcheck:
-      test: ["CMD-SHELL", "wget -qO- http://localhost:4000/api/health || exit 1"]
+      test: ["CMD-SHELL", "bun -e \"fetch('http://localhost:4000/api/health').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))\""]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -120,6 +120,14 @@ services:
 
 volumes:
   postgres_data:
+    external: true
+    name: arabic_texts_pgdata
   qdrant_data:
+    external: true
+    name: book-viewer_qdrant_data
   elasticsearch_data:
+    external: true
+    name: book-viewer_elasticsearch_data
   neo4j_data:
+    external: true
+    name: book-viewer_neo4j_data
