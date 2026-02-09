@@ -114,6 +114,7 @@ services:
     environment:
       OPENIDB_URL: http://openidb:4000
       SITE_URL: ${SITE_URL:-https://sanad.openislamicdb.com}
+      INTERNAL_API_SECRET: ${INTERNAL_API_SECRET:?Set INTERNAL_API_SECRET in .env}
     depends_on:
       openidb:
         condition: service_healthy

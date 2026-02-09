@@ -14,6 +14,7 @@ import { statsRoutes } from "./routes/stats";
 import { searchRateLimit, expensiveRateLimit } from "./middleware/rate-limit";
 import { timeout } from "./middleware/timeout";
 import { requestLogger } from "./middleware/request-logger";
+import { internalAuth } from "./middleware/internal-auth";
 import { prisma } from "./db";
 import { qdrant } from "./qdrant";
 
@@ -61,6 +62,7 @@ app.use("/api/search/*", searchRateLimit);
 app.use("/api/search", searchRateLimit);
 app.use("/api/transcribe/*", expensiveRateLimit);
 app.use("/api/transcribe", expensiveRateLimit);
+app.use("/api/books/:id/pages/:page/translate", internalAuth);
 app.use("/api/books/:id/pages/:page/translate", expensiveRateLimit);
 
 app.route("/api/search", searchRoutes);
