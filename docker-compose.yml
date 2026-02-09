@@ -3,7 +3,7 @@ services:
 
   db:
     container_name: openidb-postgres
-    image: postgres:16-alpine
+    image: dhi.io/postgres:16-debian13
     restart: unless-stopped
     environment:
       POSTGRES_USER: postgres
@@ -18,14 +18,14 @@ services:
         limits:
           memory: 1g
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      test: ["CMD", "pg_isready", "-U", "postgres"]
       interval: 5s
       timeout: 5s
       retries: 5
 
   qdrant:
     container_name: openidb-qdrant
-    image: qdrant/qdrant:v1.13.2
+    image: qdrant/qdrant:v1.16.2
     restart: unless-stopped
     ports:
       - "127.0.0.1:6333:6333"
@@ -43,30 +43,32 @@ services:
 
   elasticsearch:
     container_name: openidb-elasticsearch
-    image: elasticsearch:8.15.0
+    image: dhi.io/elasticsearch:9-debian13
     restart: unless-stopped
     environment:
       discovery.type: single-node
       # Security disabled for local dev only — enable xpack.security in production
       xpack.security.enabled: "false"
+      xpack.security.transport.ssl.enabled: "false"
       ES_JAVA_OPTS: "-Xms512m -Xmx512m"
     ports:
       - "127.0.0.1:9200:9200"
     volumes:
       - elasticsearch_data:/usr/share/elasticsearch/data
+      - ./elasticsearch.yml:/usr/share/elasticsearch/config/elasticsearch.yml:ro
     deploy:
       resources:
         limits:
           memory: 2g
     healthcheck:
-      test: ["CMD-SHELL", "curl -s http://localhost:9200"]
+      test: ["CMD-SHELL", "bash -c ':> /dev/tcp/localhost/9200'"]
       interval: 10s
       timeout: 5s
       retries: 5
 
   neo4j:
     container_name: openidb-neo4j
-    image: neo4j:5-community
+    image: dhi.io/neo4j:2025-debian13
     restart: unless-stopped
     environment:
       NEO4J_AUTH: neo4j/${NEO4J_PASSWORD:?Set NEO4J_PASSWORD in .env}
@@ -81,7 +83,7 @@ services:
         limits:
           memory: 2g
     healthcheck:
-      test: ["CMD-SHELL", "wget -qO- http://localhost:7474 || exit 1"]
+      test: ["CMD", "cypher-shell", "-u", "neo4j", "-p", "${NEO4J_PASSWORD}", "RETURN 1"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -92,6 +94,8 @@ services:
     container_name: openidb-api
     build: .
     restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
     ports:
       - "127.0.0.1:4000:4000"
     env_file: .env
@@ -125,6 +129,8 @@ services:
     build:
       context: ../sabeel/web
     restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
     ports:
       - "127.0.0.1:3000:3000"
     environment:
