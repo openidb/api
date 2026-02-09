@@ -23,11 +23,17 @@ import {
 // Re-export dimensions
 export { EMBEDDING_DIMENSIONS };
 
-// Use OpenRouter to access Gemini embedding models
-const openai = new OpenAI({
-  apiKey: process.env.OPENROUTER_API_KEY,
-  baseURL: "https://openrouter.ai/api/v1",
-});
+// Use OpenRouter to access Gemini embedding models (lazy init to avoid crash when API key is absent)
+let _openai: OpenAI | null = null;
+function getOpenAI(): OpenAI {
+  if (!_openai) {
+    _openai = new OpenAI({
+      apiKey: process.env.OPENROUTER_API_KEY,
+      baseURL: "https://openrouter.ai/api/v1",
+    });
+  }
+  return _openai;
+}
 
 // Model configuration
 const EMBEDDING_MODEL = "google/gemini-embedding-001";
@@ -52,7 +58,7 @@ export async function generateEmbedding(text: string): Promise<number[]> {
   }
 
   // Generate embedding via API
-  const response = await openai.embeddings.create({
+  const response = await getOpenAI().embeddings.create({
     model: EMBEDDING_MODEL,
     input: text,
   });
@@ -114,7 +120,7 @@ export async function generateEmbeddings(texts: string[]): Promise<number[][]> {
   }
 
   // Generate embeddings for uncached texts
-  const response = await openai.embeddings.create({
+  const response = await getOpenAI().embeddings.create({
     model: EMBEDDING_MODEL,
     input: uncachedTexts,
   });
