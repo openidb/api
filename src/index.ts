@@ -60,6 +60,8 @@ app.use("/api/*", requestLogger);
 // Rate limiting for expensive endpoints
 app.use("/api/search/*", searchRateLimit);
 app.use("/api/search", searchRateLimit);
+app.use("/api/transcribe/*", internalAuth);
+app.use("/api/transcribe", internalAuth);
 app.use("/api/transcribe/*", expensiveRateLimit);
 app.use("/api/transcribe", expensiveRateLimit);
 app.use("/api/books/:id/pages/:page/translate", internalAuth);

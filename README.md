@@ -38,7 +38,6 @@ Base URL: `http://localhost:4000`
 | `GET /api/books/categories` | Category tree |
 | `GET /api/books/categories/:id` | Category with books |
 | `GET /api/stats` | Database counts |
-| `POST /api/transcribe` | Audio transcription (Groq Whisper) |
 | `GET /api/health` | Health check |
 
 ## Search
@@ -62,8 +61,9 @@ Requests pass through middleware in this order:
 2. **Compression** — Gzip via `hono/compress`
 3. **Timeout** — 30s default, 60s for `/translate` endpoints. Returns 504 on timeout.
 4. **Request logging** — Logs `METHOD /path STATUS duration_ms` per request
-5. **Rate limiting** — Per-IP rate limits on search and transcription endpoints
-6. **Routes** — Application handlers
+5. **Rate limiting** — Per-IP rate limits on search endpoints
+6. **Internal auth** — Shared-secret authentication for internal endpoints (transcribe, translate)
+7. **Routes** — Application handlers
 
 ## Health Check
 
@@ -90,7 +90,7 @@ Static data endpoints include `Cache-Control` headers:
 |-----------------|---------------|
 | `/api/quran/surahs`, `/api/hadith/collections`, `/api/stats` | 1 hour (`max-age=3600`) |
 | `/api/quran/surahs/:number`, `/api/hadith/collections/:slug` | 24 hours (`max-age=86400`) |
-| `/api/search`, `/api/transcribe` | No cache |
+| `/api/search` | No cache |
 
 ## Setup
 
@@ -123,6 +123,7 @@ ELASTICSEARCH_URL=http://localhost:9200
 NEO4J_URI=bolt://localhost:7687
 NEO4J_USER=neo4j
 ALLOWED_ORIGINS=http://localhost:3000
+INTERNAL_API_SECRET=   # Shared secret for sabeel → openidb internal calls
 ```
 
 Optional:
