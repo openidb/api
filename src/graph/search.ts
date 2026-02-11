@@ -516,7 +516,7 @@ async function resolveBookRefs(
         text,
         metadata: {
           label: `${page.book.titleArabic} ص${toArabicNumerals(String(lookup.pageNumber))}`,
-          labelEnglish: `${page.book.titleLatin} p.${lookup.pageNumber}`,
+          labelEnglish: `${page.book.titleLatin || page.book.titleArabic} p.${lookup.pageNumber}`,
         },
       });
     }

@@ -12,7 +12,7 @@ export const AuthorIdParam = z.object({
 export const AuthorSummary = z.object({
   id: z.string(),
   nameArabic: z.string(),
-  nameLatin: z.string(),
+  nameLatin: z.string().nullable(),
   deathDateHijri: z.string().nullable(),
   deathDateGregorian: z.string().nullable(),
   booksCount: z.number(),
@@ -30,7 +30,7 @@ export const AuthorDetailResponse = z.object({
   author: z.object({
     id: z.string(),
     nameArabic: z.string(),
-    nameLatin: z.string(),
+    nameLatin: z.string().nullable(),
     kunya: z.string().nullable(),
     nasab: z.string().nullable(),
     nisba: z.string().nullable(),

@@ -110,7 +110,7 @@ export async function searchAuthors(query: string, limit: number = 5): Promise<A
         const payload = result.payload as {
           authorId: string;
           nameArabic: string;
-          nameLatin: string;
+          nameLatin: string | null;
           deathDateHijri: string | null;
           deathDateGregorian: string | null;
           booksCount: number;

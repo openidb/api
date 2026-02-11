@@ -36,7 +36,7 @@ export const TranslateBody = z.object({
 export const BookSummary = z.object({
   id: z.string(),
   titleArabic: z.string(),
-  titleLatin: z.string(),
+  titleLatin: z.string().nullable(),
   filename: z.string(),
   totalVolumes: z.number(),
   totalPages: z.number().nullable(),
@@ -46,7 +46,7 @@ export const BookSummary = z.object({
   author: z.object({
     id: z.string(),
     nameArabic: z.string(),
-    nameLatin: z.string(),
+    nameLatin: z.string().nullable(),
     deathDateHijri: z.string().nullable(),
     deathDateGregorian: z.string().nullable(),
   }).nullable(),
@@ -69,7 +69,7 @@ export const BookDetailResponse = z.object({
   book: z.object({
     id: z.string(),
     titleArabic: z.string(),
-    titleLatin: z.string(),
+    titleLatin: z.string().nullable(),
     filename: z.string(),
     totalVolumes: z.number(),
     totalPages: z.number().nullable(),
@@ -83,7 +83,7 @@ export const BookDetailResponse = z.object({
     author: z.object({
       id: z.string(),
       nameArabic: z.string(),
-      nameLatin: z.string(),
+      nameLatin: z.string().nullable(),
       deathDateHijri: z.string().nullable(),
       deathDateGregorian: z.string().nullable(),
     }).nullable(),

@@ -8,13 +8,11 @@
  * Usage:
  *   bun run pipelines/import/import-turath.ts --id=4                    # Import book 4
  *   bun run pipelines/import/import-turath.ts --id=4 --dry-run          # Preview only
- *   bun run pipelines/import/import-turath.ts --id=4 --skip-transliteration  # Use basic slug
  */
 
 import "../env";
 import { prisma } from "../../src/db";
 import { hashPage } from "../../src/utils/content-hash";
-import { transliterateArabicBatch } from "../lib/transliterate";
 import { s3, BUCKET_NAME } from "../../src/s3";
 import { ensureBucket } from "../../src/utils/s3-bucket";
 import { HeadObjectCommand, PutObjectCommand } from "@aws-sdk/client-s3";
@@ -23,28 +21,25 @@ import { HeadObjectCommand, PutObjectCommand } from "@aws-sdk/client-s3";
 // CLI args
 // ---------------------------------------------------------------------------
 
-function parseArgs(): { id: string; dryRun: boolean; skipTransliteration: boolean } {
+function parseArgs(): { id: string; dryRun: boolean } {
   const args = process.argv.slice(2);
   let id = "";
   let dryRun = false;
-  let skipTransliteration = false;
 
   for (const arg of args) {
     if (arg.startsWith("--id=")) {
       id = arg.slice(5);
     } else if (arg === "--dry-run") {
       dryRun = true;
-    } else if (arg === "--skip-transliteration") {
-      skipTransliteration = true;
     }
   }
 
   if (!id) {
-    console.error("Usage: bun run pipelines/import/import-turath.ts --id=<book_id> [--dry-run] [--skip-transliteration]");
+    console.error("Usage: bun run pipelines/import/import-turath.ts --id=<book_id> [--dry-run]");
     process.exit(1);
   }
 
-  return { id, dryRun, skipTransliteration };
+  return { id, dryRun };
 }
 
 // ---------------------------------------------------------------------------
@@ -228,76 +223,6 @@ function stripHtml(html: string): string {
       .join("\n")
       .trim()
   );
-}
-
-// ---------------------------------------------------------------------------
-// Basic Arabic transliteration
-// ---------------------------------------------------------------------------
-
-function transliterateBasic(text: string): string {
-  if (!text) return "";
-
-  const clean = text.replace(/[\u064B-\u065F\u0670]/g, "");
-
-  const wordMap: Record<string, string> = {
-    "كتاب": "Kitab", "رسالة": "Risalah", "شرح": "Sharh",
-    "مختصر": "Mukhtasar", "تفسير": "Tafsir", "صحيح": "Sahih",
-    "سنن": "Sunan", "مسند": "Musnad", "فتح": "Fath",
-    "ابن": "Ibn", "بن": "bin", "أبو": "Abu", "أبي": "Abi",
-    "عبد": "Abd", "الله": "Allah", "الرحمن": "al-Rahman",
-    "الدين": "al-Din", "الإسلام": "al-Islam", "القرآن": "al-Quran",
-    "في": "fi", "من": "min", "على": "ala", "إلى": "ila",
-    "عن": "an", "مع": "ma'a", "بين": "bayn",
-    "محمد": "Muhammad", "أحمد": "Ahmad", "علي": "Ali",
-    "عمر": "Umar", "عثمان": "Uthman", "إبراهيم": "Ibrahim",
-    "البخاري": "al-Bukhari", "النووي": "al-Nawawi",
-    "القرطبي": "al-Qurtubi", "الطبري": "al-Tabari",
-    "الشافعي": "al-Shafi'i",
-  };
-
-  const charMap: Record<string, string> = {
-    "\u0627": "a", "\u0623": "a", "\u0625": "i", "\u0622": "a",
-    "\u0628": "b", "\u062A": "t", "\u062B": "th", "\u062C": "j",
-    "\u062D": "h", "\u062E": "kh", "\u062F": "d", "\u0630": "dh",
-    "\u0631": "r", "\u0632": "z", "\u0633": "s", "\u0634": "sh",
-    "\u0635": "s", "\u0636": "d", "\u0637": "t", "\u0638": "z",
-    "\u0639": "'", "\u063A": "gh", "\u0641": "f", "\u0642": "q",
-    "\u0643": "k", "\u0644": "l", "\u0645": "m", "\u0646": "n",
-    "\u0647": "h", "\u0648": "w", "\u064A": "y", "\u0649": "a",
-    "\u0629": "ah", "\u0621": "'", "\u0671": "a", "\u0626": "'",
-    "\u0624": "'",
-  };
-
-  function mapChars(word: string): string {
-    let result = "";
-    for (const ch of word) {
-      result += charMap[ch] ?? ch;
-    }
-    return result;
-  }
-
-  function capitalize(s: string): string {
-    return s ? s.charAt(0).toUpperCase() + s.slice(1) : s;
-  }
-
-  function mapWord(word: string): string {
-    if (wordMap[word]) return wordMap[word];
-    if (word.startsWith("ال") && word.length > 2) {
-      const stem = word.slice(2);
-      if (wordMap["ال" + stem]) return wordMap["ال" + stem];
-      return "al-" + capitalize(mapChars(stem));
-    }
-    return capitalize(mapChars(word));
-  }
-
-  return clean
-    .split(/\s+/)
-    .filter(Boolean)
-    .map(mapWord)
-    .join(" ")
-    .replace(/'+/g, "'")
-    .trim()
-    .substring(0, 150);
 }
 
 // ---------------------------------------------------------------------------
@@ -654,9 +579,9 @@ export interface ImportResult {
 
 export async function importTurathBook(
   id: string,
-  options: { dryRun?: boolean; skipTransliteration?: boolean } = {},
+  options: { dryRun?: boolean } = {},
 ): Promise<ImportResult> {
-  const { dryRun = false, skipTransliteration = false } = options;
+  const { dryRun = false } = options;
 
   try {
     // 1. Fetch book metadata from Turath API
@@ -761,32 +686,8 @@ export async function importTurathBook(
       return { bookId: id, title: content.meta.name, pages: content.pages.length, success: true };
     }
 
-    // 4. Transliterate title and author name
-    console.log("\nStep 4: Transliterating...");
-    let titleLatin: string;
-    let authorNameLatin: string;
-
-    if (skipTransliteration) {
-      titleLatin = transliterateBasic(content.meta.name);
-      authorNameLatin = transliterateBasic(authorName);
-      console.log(`  Title (basic):   ${titleLatin}`);
-      console.log(`  Author (basic):  ${authorNameLatin}`);
-    } else {
-      try {
-        const batch = await transliterateArabicBatch([content.meta.name, authorName]);
-        titleLatin = batch.get(content.meta.name) || transliterateBasic(content.meta.name);
-        authorNameLatin = batch.get(authorName) || transliterateBasic(authorName);
-        console.log(`  Title (AI):      ${titleLatin}`);
-        console.log(`  Author (AI):     ${authorNameLatin}`);
-      } catch (error) {
-        console.warn("  AI transliteration failed, using basic:", error);
-        titleLatin = transliterateBasic(content.meta.name);
-        authorNameLatin = transliterateBasic(authorName);
-      }
-    }
-
-    // 5. Ensure Author in DB
-    console.log("\nStep 5: Ensuring author...");
+    // 4. Ensure Author in DB
+    console.log("\nStep 4: Ensuring author...");
     const authorId = String(content.meta.author_id);
 
     const existingAuthor = await prisma.author.findUnique({ where: { id: authorId } });
@@ -820,30 +721,21 @@ export async function importTurathBook(
         console.log(`  Updated author fields: ${Object.keys(authorUpdates).join(", ")}`);
       }
     } else {
-      // Ensure nameLatin is unique
-      let finalNameLatin = authorNameLatin;
-      let counter = 1;
-      while (await prisma.author.findUnique({ where: { nameLatin: finalNameLatin } })) {
-        finalNameLatin = `${authorNameLatin} (${counter})`;
-        counter++;
-      }
-
       await prisma.author.create({
         data: {
           id: authorId,
           nameArabic: authorName,
-          nameLatin: finalNameLatin,
           biography: authorInfo.biography,
           biographySource: authorInfo.biography ? "turath.io" : null,
           deathDateHijri: authorDeathDate,
           birthDateHijri: authorBirthDate,
         },
       });
-      console.log(`  Created author: ${authorName} -> ${finalNameLatin}`);
+      console.log(`  Created author: ${authorName}`);
     }
 
-    // 6. Ensure Category in DB
-    console.log("\nStep 6: Ensuring category...");
+    // 5. Ensure Category in DB
+    console.log("\nStep 5: Ensuring category...");
     const categoryName = getCategoryName(content.meta.cat_id);
 
     let categoryRecord = await prisma.category.findUnique({ where: { nameArabic: categoryName } });
@@ -859,8 +751,8 @@ export async function importTurathBook(
       console.log(`  Category exists: ${categoryName}`);
     }
 
-    // 7. Build TOC with mapped page numbers
-    console.log("\nStep 7: Building table of contents...");
+    // 6. Build TOC with mapped page numbers
+    console.log("\nStep 6: Building table of contents...");
 
     // Map printed page number → 0-based index in pages array, then +1 for overview page offset
     const printedToIndex = new Map<number, number>();
@@ -879,7 +771,7 @@ export async function importTurathBook(
 
     console.log(`  ${tocEntries.length} TOC entries mapped`);
 
-    // 7b. Ensure Publisher in DB
+    // 6b. Ensure Publisher in DB
     let publisherRecord: { id: number } | null = null;
     if (parsedInfo.publisher) {
       console.log("\nStep 7b: Ensuring publisher...");
@@ -891,7 +783,7 @@ export async function importTurathBook(
       console.log(`  Publisher: ${parsedInfo.publisher} (ID: ${publisherRecord.id})`);
     }
 
-    // 7c. Ensure Editor in DB
+    // 6c. Ensure Editor in DB
     let editorRecord: { id: number } | null = null;
     if (parsedInfo.editor) {
       console.log("\nStep 7c: Ensuring editor...");
@@ -903,15 +795,14 @@ export async function importTurathBook(
       console.log(`  Editor: ${parsedInfo.editor} (ID: ${editorRecord.id})`);
     }
 
-    // 8. Create Book record
-    console.log("\nStep 8: Creating book...");
+    // 7. Create Book record
+    console.log("\nStep 7: Creating book...");
     const bookId = String(id);
 
     const displayTitle = content.meta.name;
 
     const bookData = {
       titleArabic: displayTitle,
-      titleLatin,
       authorId,
       categoryId: categoryRecord.id,
       totalVolumes,
@@ -939,12 +830,12 @@ export async function importTurathBook(
       console.log(`  Created book: ${displayTitle}`);
     }
 
-    // 9. Download & store PDFs in RustFS
+    // 8. Download & store PDFs in RustFS
     const pdfKeyMap = new Map<number, string>(); // volumeIndex → RustFS key
     const failedVolumes = new Set<number>(); // track volumes whose download failed
 
     if (pdfLinks?.files && pdfLinks.files.length > 0) {
-      console.log("\nStep 9: Downloading PDFs to RustFS...");
+      console.log("\nStep 8: Downloading PDFs to RustFS...");
       await ensureBucket();
 
       let downloaded = 0;
@@ -984,11 +875,11 @@ export async function importTurathBook(
 
       console.log(`  Downloaded: ${downloaded}, Skipped (cached): ${skippedPdfs}, Failed: ${failedPdfs}`);
     } else {
-      console.log("\nStep 9: No PDF links available, skipping PDF download.");
+      console.log("\nStep 8: No PDF links available, skipping PDF download.");
     }
 
-    // 10. Create Page records
-    console.log("\nStep 10: Importing pages...");
+    // 9. Create Page records
+    console.log("\nStep 9: Importing pages...");
 
     // Delete existing pages for this book (clean re-import)
     const deletedCount = await prisma.page.deleteMany({ where: { bookId } });
@@ -996,7 +887,7 @@ export async function importTurathBook(
       console.log(`  Deleted ${deletedCount.count} existing pages`);
     }
 
-    // 10a. Generate and insert overview page (pageNumber=0)
+    // 9a. Generate and insert overview page (pageNumber=0)
     const overviewContent = generateOverviewContent(
       displayTitle,
       authorName,
@@ -1005,6 +896,13 @@ export async function importTurathBook(
     );
     const overviewPlain = stripHtml(overviewContent);
     const overviewHash = hashPage(bookId, 0, overviewPlain);
+
+    // Use first volume's PDF for the overview page
+    const firstVolumeIndex = content.pages.length > 0
+      ? (volLabelToIndex.get(content.pages[0].vol) ?? 0)
+      : 0;
+    const overviewPdfUrl = pdfKeyMap.get(firstVolumeIndex)
+      ?? (failedVolumes.has(firstVolumeIndex) ? null : buildPdfUrl(pdfLinks, firstVolumeIndex));
 
     await prisma.page.create({
       data: {
@@ -1017,11 +915,12 @@ export async function importTurathBook(
         contentPlain: overviewPlain,
         contentHash: overviewHash,
         sourceUrl: `https://app.turath.io/book/${id}`,
+        pdfUrl: overviewPdfUrl,
       },
     });
     console.log("  Created overview page (page 0)");
 
-    // 10b. Batch insert content pages (shifted by +1: first content page = pageNumber 1)
+    // 9b. Batch insert content pages (shifted by +1: first content page = pageNumber 1)
     const BATCH_SIZE = 100;
     let importedPages = 1; // Start at 1 counting the overview page
     let skippedPages = 0;
@@ -1079,7 +978,7 @@ export async function importTurathBook(
 
     console.log(); // newline after progress
 
-    // 11. Print final summary
+    // 10. Print final summary
     console.log("\n" + "=".repeat(60));
     console.log("IMPORT COMPLETE");
     console.log("=".repeat(60));
@@ -1091,7 +990,6 @@ export async function importTurathBook(
     console.log(`  Pages skipped:   ${skippedPages} (empty)`);
     console.log(`  Volumes:         ${totalVolumes}`);
     console.log(`  PDFs stored:     ${pdfKeyMap.size}`);
-    console.log(`  Title (Latin):   ${titleLatin}`);
     if (publisherRecord) console.log(`  Publisher:       ${parsedInfo.publisher}`);
     if (editorRecord) console.log(`  Editor:          ${parsedInfo.editor}`);
     if (parsedInfo.yearHijri) console.log(`  Year (Hijri):    ${parsedInfo.yearHijri}`);
@@ -1111,17 +1009,16 @@ export async function importTurathBook(
 // ---------------------------------------------------------------------------
 
 async function main() {
-  const { id, dryRun, skipTransliteration } = parseArgs();
+  const { id, dryRun } = parseArgs();
 
   console.log("Turath Book Import");
   console.log("=".repeat(60));
   console.log(`Book ID:            ${id}`);
   console.log(`Mode:               ${dryRun ? "DRY RUN (no DB writes)" : "LIVE IMPORT"}`);
-  console.log(`Transliteration:    ${skipTransliteration ? "basic (skip AI)" : "AI-powered"}`);
   console.log("=".repeat(60));
   console.log();
 
-  const result = await importTurathBook(id, { dryRun, skipTransliteration });
+  const result = await importTurathBook(id, { dryRun });
 
   if (!result.success) {
     process.exit(1);

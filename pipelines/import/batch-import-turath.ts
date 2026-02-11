@@ -10,7 +10,6 @@
  *   bun run pipelines/import/batch-import-turath.ts --resume                    # Resume from checkpoint
  *   bun run pipelines/import/batch-import-turath.ts --limit=50 --offset=100     # Skip first 100
  *   bun run pipelines/import/batch-import-turath.ts --limit=50 --dry-run        # Preview only
- *   bun run pipelines/import/batch-import-turath.ts --limit=50 --skip-transliteration
  *   bun run pipelines/import/batch-import-turath.ts --limit=50 --delay=1000     # 1s between books
  *   bun run pipelines/import/batch-import-turath.ts --limit=50 --no-skip-existing
  */
@@ -30,7 +29,6 @@ interface BatchArgs {
   offset: number;
   all: boolean;
   dryRun: boolean;
-  skipTransliteration: boolean;
   resume: boolean;
   delay: number;
   skipExisting: boolean;
@@ -43,7 +41,6 @@ function parseArgs(): BatchArgs {
     offset: 0,
     all: false,
     dryRun: false,
-    skipTransliteration: false,
     resume: false,
     delay: 750,
     skipExisting: true,
@@ -58,8 +55,6 @@ function parseArgs(): BatchArgs {
       result.all = true;
     } else if (arg === "--dry-run") {
       result.dryRun = true;
-    } else if (arg === "--skip-transliteration") {
-      result.skipTransliteration = true;
     } else if (arg === "--resume") {
       result.resume = true;
     } else if (arg.startsWith("--delay=")) {
@@ -76,7 +71,6 @@ function parseArgs(): BatchArgs {
     console.error("  --offset=N             Skip first N catalog entries");
     console.error("  --all                  Import all books in catalog");
     console.error("  --resume               Resume from last checkpoint");
-    console.error("  --skip-transliteration Use basic rule-based transliteration");
     console.error("  --dry-run              Preview without DB writes");
     console.error("  --delay=MS             Delay between books in ms (default: 750)");
     console.error("  --no-skip-existing     Re-import books already in DB");
@@ -176,7 +170,6 @@ async function main() {
   console.log("=".repeat(60));
   console.log(`Catalog:            ${catalog.totalBooks} books (scraped ${catalog.scrapedAt})`);
   console.log(`Mode:               ${args.dryRun ? "DRY RUN" : "LIVE IMPORT"}`);
-  console.log(`Transliteration:    ${args.skipTransliteration ? "basic (skip AI)" : "AI-powered"}`);
   console.log(`Skip existing:      ${args.skipExisting ? "yes" : "no"}`);
   console.log(`Delay:              ${args.delay}ms between books`);
 
@@ -254,7 +247,6 @@ async function main() {
     // Import
     const result: ImportResult = await importTurathBook(String(book.id), {
       dryRun: args.dryRun,
-      skipTransliteration: args.skipTransliteration,
     });
 
     const elapsed = ((Date.now() - bookStartTime) / 1000).toFixed(1);

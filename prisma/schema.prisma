@@ -21,7 +21,7 @@ model Author {
 
   // Names
   nameArabic String  @map("name_arabic")
-  nameLatin  String  @unique @map("name_latin")
+  nameLatin  String?  @map("name_latin")
   kunya      String? // e.g., "أبو الفرج"
   nasab      String? // Genealogy
   nisba      String? // Place/tribe attribution
@@ -101,7 +101,7 @@ model Book {
 
   // Titles
   titleArabic String @map("title_arabic")
-  titleLatin  String @map("title_latin")
+  titleLatin  String? @map("title_latin")
 
   // Author Relationship
   authorId String @map("author_id")

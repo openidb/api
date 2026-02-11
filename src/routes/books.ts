@@ -467,7 +467,18 @@ booksRoutes.openapi(getPagePdf, async (c) => {
     return c.json({ error: "Page not found" }, 404);
   }
 
-  const storage = detectPdfStorage(page.pdfUrl);
+  let storage = detectPdfStorage(page.pdfUrl);
+
+  // Overview page (page 0) is synthetic and has no PDF — fall back to page 1
+  if (storage.type === "none" && pageNumber === 0) {
+    const firstPage = await prisma.page.findUnique({
+      where: { bookId_pageNumber: { bookId, pageNumber: 1 } },
+      select: { pdfUrl: true },
+    });
+    if (firstPage) {
+      storage = detectPdfStorage(firstPage.pdfUrl);
+    }
+  }
 
   if (storage.type === "none") {
     return c.json({ error: "No PDF available for this page" }, 404);

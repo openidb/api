@@ -20,12 +20,12 @@ export interface SearchResult {
   book: {
     id: string;
     titleArabic: string;
-    titleLatin: string;
+    titleLatin: string | null;
     titleTranslated?: string | null;
     filename: string;
     author: {
       nameArabic: string;
-      nameLatin: string;
+      nameLatin: string | null;
     };
   } | null;
 }
@@ -71,7 +71,7 @@ export interface HadithResult {
 export interface AuthorResult {
   id: string;
   nameArabic: string;
-  nameLatin: string;
+  nameLatin: string | null;
   deathDateHijri: string | null;
   deathDateGregorian: string | null;
   booksCount: number;

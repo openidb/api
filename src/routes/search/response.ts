@@ -120,7 +120,7 @@ export async function fetchBookDetails(
   bookTitleLang: string | undefined,
 ): Promise<{
   results: RankedResult[];
-  books: Array<{ id: string; titleArabic: string; titleLatin: string; filename: string; publicationYearHijri: string | null; publicationYearGregorian: string | null; titleTranslated: string | null; author: { nameArabic: string; nameLatin: string; deathDateHijri: string | null; deathDateGregorian: string | null } }>;
+  books: Array<{ id: string; titleArabic: string; titleLatin: string | null; filename: string; publicationYearHijri: string | null; publicationYearGregorian: string | null; titleTranslated: string | null; author: { nameArabic: string; nameLatin: string | null; deathDateHijri: string | null; deathDateGregorian: string | null } }>;
   timing: { bookMetadata: number };
 }> {
   // Fetch urlPageIndex
@@ -182,7 +182,7 @@ export async function fetchBookDetails(
 
 export function formatSearchResults(
   rankedResults: RankedResult[],
-  books: Array<{ id: string; titleArabic: string; titleLatin: string; filename: string; titleTranslated: string | null; author: { nameArabic: string; nameLatin: string; deathDateHijri?: string | null; deathDateGregorian?: string | null } }>,
+  books: Array<{ id: string; titleArabic: string; titleLatin: string | null; filename: string; titleTranslated: string | null; author: { nameArabic: string; nameLatin: string | null; deathDateHijri?: string | null; deathDateGregorian?: string | null } }>,
   mode: string,
 ): SearchResult[] {
   const bookMap = new Map(books.map((b) => [b.id, b]));
