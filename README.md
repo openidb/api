@@ -8,7 +8,7 @@ Built with Hono, PostgreSQL, Qdrant, Elasticsearch, and Neo4j.
 
 - **Quran** — 114 surahs, 6,236 ayahs (Uthmani script), 500+ translation editions across 90+ languages, 27 tafsirs in 6 languages
 - **Hadith** — 17 collections (Bukhari, Muslim, Abu Dawud, Tirmidhi, Nasa'i, Ibn Majah, Ahmad, Malik, Darimi, Riyad as-Salihin, Al-Adab Al-Mufrad, Ash-Shama'il, Mishkat al-Masabih, Bulugh al-Maram, Nawawi's 40, 40 Qudsi, Hisn al-Muslim)
-- **Books** — Classical Arabic texts from Maktaba Shamela with full-text content, authors, categories, and publishers
+- **Books** — Classical Arabic texts from [Turath.io](https://turath.io/) (same corpus as Maktaba Shamela) — full-text HTML pages, volume/printed page numbers, table of contents, scanned PDFs, authors, categories, publishers, and editors
 
 ## API
 
@@ -196,21 +196,31 @@ prisma/
 Import scripts live in `pipelines/import/`:
 
 ```bash
-bun run pipelines/import/import-quran.ts              # Quran from Al Quran Cloud API
-bun run pipelines/import/import-quran-translations.ts --all  # All Quran translations (500+)
-bun run pipelines/import/import-quran-translations.ts --lang=en,fr  # By language
+# Quran
+bun run pipelines/import/import-quran.ts                                         # Quran text from Al Quran Cloud API
+bun run pipelines/import/import-quran-translations.ts --all                      # All translations (500+ editions)
+bun run pipelines/import/import-quran-translations.ts --lang=en,fr               # By language
 bun run pipelines/import/import-quran-translations.ts --edition=eng-mustafakhattaba  # Single edition
-bun run pipelines/import/import-tafsirs.ts --all       # All tafsirs (27 editions)
-bun run pipelines/import/import-tafsirs.ts --lang=en   # By language
-bun run pipelines/import/import-tafsirs.ts --edition=en-al-jalalayn  # Single edition
-bun run pipelines/import/scrape-sunnah.ts              # Hadith collections from sunnah.com
-bun run pipelines/import/import-turath.ts --id=26       # Books from Turath API
+bun run pipelines/import/import-tafsirs.ts --all                                 # All tafsirs (27 editions)
+bun run pipelines/import/import-tafsirs.ts --lang=en                             # By language
+
+# Hadith
+bun run pipelines/import/scrape-sunnah.ts --download-only --all                  # Download HTML from sunnah.com
+bun run pipelines/import/scrape-sunnah.ts --process-only --all                   # Import into database
+bun run pipelines/import/scrape-hadith-translations.ts --all                     # English translations
+
+# Books (Turath API → PostgreSQL + RustFS)
+bun run pipelines/import/import-turath.ts --id=26                                # Import book by ID
+bun run pipelines/import/import-turath.ts --id=26 --dry-run                      # Preview without writing
+bun run pipelines/import/import-turath.ts --id=26 --skip-transliteration         # Skip AI transliteration
 ```
+
+The Turath pipeline fetches book text, metadata, and PDFs from `api.turath.io` and `files.turath.io`. PDFs are downloaded and stored in RustFS (S3-compatible storage) and served via presigned URLs. See [scrapers/books/README.md](https://github.com/openidb/scrapers/blob/main/books/README.md) for the full pipeline documentation.
 
 Additional pipelines:
 
 ```bash
-bun run pipelines/embed/generate-embeddings.ts               # Generate vector embeddings
+bun run pipelines/embed/generate-embeddings.ts               # Generate vector embeddings for Qdrant
 bun run pipelines/index/sync-elasticsearch.ts                 # Sync data to Elasticsearch
 bun run pipelines/knowledge-graph/seed-neo4j.ts               # Seed Neo4j knowledge graph
 ```
