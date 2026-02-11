@@ -22,7 +22,6 @@
     "dotenv": "^17.2.3",
     "hono": "^4",
     "hono-rate-limiter": "^0.5.3",
-    "jszip": "^3.10.1",
     "neo4j-driver": "^6.0.1",
     "openai": "^6.16.0",
     "pg": "^8.16.3",
