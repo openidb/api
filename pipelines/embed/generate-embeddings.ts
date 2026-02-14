@@ -14,11 +14,14 @@
  *   --batch-size=N             Number of pages to process in each batch (default: 50)
  *   --pages-only               Only process book pages, skip Quran and Hadith embeddings
  *   --hadiths-only             Only process hadiths, skip pages and quran
+ *   --quran-only               Only process Quran, skip pages and hadiths
+ *   --skip-pages               Skip book pages, process only Quran and Hadith
  *   --hadith-collections=a,b   Only process specific hadith collections (comma-separated slugs)
  *
  * Examples:
  *   bun run scripts/generate-embeddings.ts --hadiths-only --hadith-collections=hisn --force
  *   bun run scripts/generate-embeddings.ts --hadith-collections=bukhari,muslim
+ *   bun run scripts/generate-embeddings.ts --skip-pages
  */
 
 import "../env";
@@ -42,6 +45,8 @@ import { generateSunnahUrl } from "../../src/utils/source-urls";
 const forceFlag = process.argv.includes("--force");
 const pagesOnlyFlag = process.argv.includes("--pages-only");
 const hadithsOnlyFlag = process.argv.includes("--hadiths-only");
+const quranOnlyFlag = process.argv.includes("--quran-only");
+const skipPagesFlag = process.argv.includes("--skip-pages");
 const batchSizeArg = process.argv.find((arg) => arg.startsWith("--batch-size="));
 const BATCH_SIZE = batchSizeArg
   ? parseInt(batchSizeArg.split("=")[1], 10)
@@ -309,6 +314,11 @@ async function getExistingQuranPointIds(): Promise<Set<string>> {
 
 /**
  * Process a batch of ayahs: generate embeddings and upsert to Qdrant
+ *
+ * Embedding text format (metadata + Arabic + English translation):
+ *   سورة البقرة، آية 255:
+ *   الله لا اله الا هو الحي القيوم
+ *    ||| Allah! There is no god but He...
  */
 async function processAyahBatch(
   ayahs: Array<{
@@ -323,12 +333,19 @@ async function processAyahBatch(
       nameArabic: string;
       nameEnglish: string;
     };
-  }>
+  }>,
+  translationMap: Map<string, string>
 ): Promise<number> {
-  // Prepare texts for embedding - use plain text for better semantic matching
+  // Prepare texts for embedding - metadata + Arabic + English translation
   const texts = ayahs.map((ayah) => {
+    const metadata = `سورة ${ayah.surah.nameArabic}، آية ${ayah.ayahNumber}:`;
     const normalized = normalizeArabicText(ayah.textPlain);
-    return truncateForEmbedding(normalized);
+    const parts = [metadata, normalized];
+    const translation = translationMap.get(`${ayah.surah.number}:${ayah.ayahNumber}`);
+    if (translation) {
+      parts.push(` ||| ${translation}`);
+    }
+    return truncateForEmbedding(parts.join("\n"));
   });
 
   // Generate embeddings in batch
@@ -384,6 +401,18 @@ async function generateQuranEmbeddings(): Promise<void> {
     return;
   }
 
+  // Pre-fetch English translations (Mustafa Khattab edition) for all ayahs
+  console.log("Loading English translations (Mustafa Khattab)...");
+  const allTranslations = await prisma.ayahTranslation.findMany({
+    where: { editionId: "eng-mustafakhattaba" },
+    select: { surahNumber: true, ayahNumber: true, text: true },
+  });
+  const translationMap = new Map<string, string>();
+  for (const t of allTranslations) {
+    translationMap.set(`${t.surahNumber}:${t.ayahNumber}`, t.text);
+  }
+  console.log(`Loaded ${translationMap.size} English translations\n`);
+
   let processed = 0;
   let skipped = 0;
   let failed = 0;
@@ -426,7 +455,7 @@ async function generateQuranEmbeddings(): Promise<void> {
 
     if (ayahsToProcess.length > 0) {
       try {
-        const count = await processAyahBatch(ayahsToProcess);
+        const count = await processAyahBatch(ayahsToProcess, translationMap);
         processed += count;
         console.log(
           `Processed ${processed}/${totalAyahs} ayahs (skipped: ${skipped}, failed: ${failed})`
@@ -701,17 +730,8 @@ async function generateHadithEmbeddings(): Promise<void> {
     return;
   }
 
-  // Pre-fetch all English translations for hadiths into a map (keyed by bookId:hadithNumber)
-  console.log("Loading English translations for hadiths...");
-  const allTranslations = await prisma.hadithTranslation.findMany({
-    where: { language: "en" },
-    select: { bookId: true, hadithNumber: true, text: true },
-  });
+  // Hadith embeddings use metadata + Arabic text only (no translations)
   const translationMap = new Map<string, string>();
-  for (const t of allTranslations) {
-    translationMap.set(`${t.bookId}:${t.hadithNumber}`, t.text);
-  }
-  console.log(`Loaded ${translationMap.size} English hadith translations\n`);
 
   let processed = 0;
   let skipped = 0;
@@ -823,11 +843,15 @@ async function main() {
     ? "Pages only (skip Quran/Hadith)"
     : hadithsOnlyFlag
     ? "Hadiths only"
+    : quranOnlyFlag
+    ? "Quran only"
+    : skipPagesFlag
+    ? "Skip pages (Quran + Hadith only)"
     : "Skip existing";
   console.log(`Mode: ${modeDesc}`);
   console.log();
 
-  if (!hadithsOnlyFlag) {
+  if (!hadithsOnlyFlag && !skipPagesFlag && !quranOnlyFlag) {
     // Initialize Qdrant collection
     await initializeCollection();
 
@@ -922,21 +946,19 @@ async function main() {
     }
 
     console.log("\nPage embedding generation completed!");
-
-    // Skip Quran/Hadith if --pages-only flag is set
-    if (pagesOnlyFlag) {
-      console.log("\nSkipping Quran and Hadith embeddings (--pages-only mode)");
-      return;
-    }
-
-    // Generate Quran ayah embeddings
-    await generateQuranEmbeddings();
+  } else if (skipPagesFlag || quranOnlyFlag) {
+    console.log("Skipping page embeddings\n");
   } else {
     console.log("Skipping pages and Quran embeddings (--hadiths-only mode)\n");
   }
 
-  // Generate Hadith embeddings (skip if --pages-only)
-  if (!pagesOnlyFlag) {
+  // Generate Quran ayah embeddings (skip if --pages-only or --hadiths-only)
+  if (!hadithsOnlyFlag && !pagesOnlyFlag) {
+    await generateQuranEmbeddings();
+  }
+
+  // Generate Hadith embeddings (skip if --pages-only or --quran-only)
+  if (!pagesOnlyFlag && !quranOnlyFlag) {
     await generateHadithEmbeddings();
   }
 

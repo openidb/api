@@ -61,7 +61,7 @@ export const HadithSchema = z.object({
   contentHash: z.string().nullable(),
   chapterArabic: z.string().nullable(),
   chapterEnglish: z.string().nullable(),
-  sunnahUrl: z.string(),
+  sunnahComUrl: z.string(),
 });
 
 export const HadithBookResponse = z.object({
@@ -91,7 +91,7 @@ export const HadithDetailResponse = z.object({
     contentHash: z.string().nullable(),
     chapterArabic: z.string().nullable(),
     chapterEnglish: z.string().nullable(),
-    sunnahUrl: z.string(),
+    sunnahComUrl: z.string(),
     book: z.object({
       bookNumber: z.number(),
       nameEnglish: z.string().nullable(),

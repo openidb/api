@@ -244,7 +244,7 @@ describe("mergeAndDeduplicateAyahs", () => {
     const ayah: AyahRankedResult = {
       surahNumber: 2, ayahNumber: 255, score: 0.9, surahNameArabic: "البقرة",
       surahNameEnglish: "Al-Baqarah", text: "آية الكرسي", juzNumber: 3,
-      pageNumber: 42, quranUrl: "/quran/2/255",
+      pageNumber: 42, quranComUrl: "/quran/2/255",
     };
     const results = mergeAndDeduplicateAyahs([
       { results: [{ ...ayah, semanticScore: 0.9 }], weight: 1.0 },
@@ -263,7 +263,7 @@ describe("mergeAndDeduplicateHadiths", () => {
       score: 0.85, bookId: 1, collectionSlug: "bukhari", collectionNameArabic: "صحيح البخاري",
       collectionNameEnglish: "Sahih al-Bukhari", bookNumber: 1, bookNameArabic: "بدء الوحي",
       bookNameEnglish: "Revelation", hadithNumber: "1", text: "إنما الأعمال بالنيات",
-      chapterArabic: null, chapterEnglish: null, sunnahUrl: "/bukhari/1",
+      chapterArabic: null, chapterEnglish: null, sunnahComUrl: "/bukhari/1",
     };
     const results = mergeAndDeduplicateHadiths([
       { results: [hadith], weight: 1.0 },

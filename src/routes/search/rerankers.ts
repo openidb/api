@@ -8,6 +8,94 @@ import type {
 import { callOpenRouter } from "../../lib/openrouter";
 import { RERANKER_TEXT_LIMIT, UNIFIED_RERANKER_TEXT_LIMIT, UNIFIED_RERANK_TIMEOUT_MS } from "./config";
 
+const JINA_RERANK_URL = "https://api.jina.ai/v1/rerank";
+const JINA_RERANK_MODEL = "jina-reranker-v3";
+const JINA_RERANK_TIMEOUT_MS = 10000;
+
+interface JinaRerankResult {
+  index: number;
+  relevance_score: number;
+  document: { text: string };
+}
+
+async function callJinaReranker(
+  query: string,
+  documents: string[],
+  topN: number,
+): Promise<JinaRerankResult[]> {
+  const apiKey = process.env.JINA_API_KEY;
+  if (!apiKey) throw new Error("JINA_API_KEY is not set");
+
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), JINA_RERANK_TIMEOUT_MS);
+
+  try {
+    const response = await fetch(JINA_RERANK_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        model: JINA_RERANK_MODEL,
+        query,
+        documents,
+        top_n: topN,
+      }),
+      signal: controller.signal,
+    });
+
+    if (!response.ok) {
+      const errorBody = await response.text().catch(() => "");
+      throw new Error(`Jina Reranker API error ${response.status}: ${errorBody}`);
+    }
+
+    const data = await response.json();
+    return data.results as JinaRerankResult[];
+  } finally {
+    clearTimeout(timeoutId);
+  }
+}
+
+async function rerankWithJina<T>(
+  query: string,
+  results: T[],
+  getText: (item: T) => string,
+  topN: number,
+): Promise<{ results: T[]; timedOut: boolean }> {
+  if (results.length === 0) {
+    return { results: results.slice(0, topN), timedOut: false };
+  }
+
+  try {
+    const documents = results.map((r) => getText(r).slice(0, RERANKER_TEXT_LIMIT));
+    const reranked = await callJinaReranker(query, documents, topN);
+
+    // Map back to original results using index
+    const rerankedResults: T[] = reranked
+      .filter((r) => r.index >= 0 && r.index < results.length)
+      .map((r) => results[r.index]);
+
+    // Fill remaining slots with unreranked results
+    for (const result of results) {
+      if (rerankedResults.length >= topN) break;
+      if (!rerankedResults.includes(result)) {
+        rerankedResults.push(result);
+      }
+    }
+
+    return { results: rerankedResults.slice(0, topN), timedOut: false };
+  } catch (err) {
+    const timedOut = err instanceof Error && err.name === "AbortError";
+    if (timedOut) {
+      console.warn(`[Reranker] jina-reranker-v3 timed out after ${JINA_RERANK_TIMEOUT_MS}ms, using original order`);
+    } else {
+      console.warn("[Reranker] jina-reranker-v3 failed, using original order:", err);
+    }
+    return { results: results.slice(0, topN), timedOut };
+  }
+}
+
 export const RERANKER_CONFIG: Record<string, { model: string; timeoutMs: number }> = {
   "gpt-oss-20b": { model: "openai/gpt-oss-20b", timeoutMs: 20000 },
   "gpt-oss-120b": { model: "openai/gpt-oss-120b", timeoutMs: 20000 },
@@ -160,8 +248,16 @@ export async function rerank<T>(
   topN: number,
   reranker: RerankerType
 ): Promise<{ results: T[]; timedOut: boolean }> {
+  if (results.length === 0 || reranker === "none") {
+    return { results: results.slice(0, topN), timedOut: false };
+  }
+
+  if (reranker === "jina") {
+    return rerankWithJina(query, results, getText, topN);
+  }
+
   const config = RERANKER_CONFIG[reranker];
-  if (results.length === 0 || reranker === "none" || !config) {
+  if (!config) {
     return { results: results.slice(0, topN), timedOut: false };
   }
 
@@ -233,6 +329,45 @@ export async function rerankUnifiedRefine(
 
   if (unified.length < 3) {
     return fallbackRefineResult(books, ayahs, hadiths, limits);
+  }
+
+  // Jina reranker: dedicated cross-encoder path
+  if (reranker === "jina") {
+    try {
+      const documents = unified.map((d) => d.content.slice(0, UNIFIED_RERANKER_TEXT_LIMIT));
+      const totalTopN = limits.books + limits.ayahs + limits.hadiths;
+      const jinaResults = await callJinaReranker(query, documents, totalTopN);
+
+      const rerankedBooks: RankedResult[] = [];
+      const rerankedAyahs: AyahRankedResult[] = [];
+      const rerankedHadiths: HadithRankedResult[] = [];
+
+      for (const jr of jinaResults) {
+        const idx = jr.index;
+        if (idx < 0 || idx >= unified.length) continue;
+
+        const doc = unified[idx];
+        const rank = rerankedBooks.length + rerankedAyahs.length + rerankedHadiths.length + 1;
+
+        if (doc.type === 'book' && rerankedBooks.length < limits.books) {
+          rerankedBooks.push({ ...books[doc.index], semanticScore: jr.relevance_score });
+        } else if (doc.type === 'ayah' && rerankedAyahs.length < limits.ayahs) {
+          rerankedAyahs.push({ ...ayahs[doc.index], rank, score: jr.relevance_score });
+        } else if (doc.type === 'hadith' && rerankedHadiths.length < limits.hadiths) {
+          rerankedHadiths.push({ ...hadiths[doc.index], rank, score: jr.relevance_score });
+        }
+      }
+
+      return { books: rerankedBooks, ayahs: rerankedAyahs, hadiths: rerankedHadiths, timedOut: false };
+    } catch (err) {
+      const timedOut = err instanceof Error && err.name === 'AbortError';
+      if (timedOut) {
+        console.warn(`[Unified Refine Rerank] Jina timed out after ${JINA_RERANK_TIMEOUT_MS}ms, using RRF order`);
+      } else {
+        console.warn("[Unified Refine Rerank] Jina error, keeping original order:", err);
+      }
+      return fallbackRefineResult(books, ayahs, hadiths, limits, timedOut);
+    }
   }
 
   const TIMEOUT_MS = UNIFIED_RERANK_TIMEOUT_MS;

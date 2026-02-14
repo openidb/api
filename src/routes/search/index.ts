@@ -6,10 +6,12 @@ import { executeStandardSearch } from "./standard-search";
 import { executeRefineSearch } from "./refine-search";
 import { fetchAndMergeTranslations } from "./translations";
 import { startGraphSearch, resolveGraphContext, fetchBookDetails, formatSearchResults, buildDebugStats } from "./response";
-import type { AyahSearchMeta, SearchMode, RerankerType } from "./types";
+import type { AyahSearchMeta, SearchMode, RerankerType, EmbeddingModel } from "./types";
 import type { SearchParams } from "./params";
 import { ErrorResponse } from "../../schemas/common";
 import { SearchQuery, SearchResponse } from "../../schemas/search";
+import { logSearchEvent } from "../../analytics/log-search";
+import { clickRoutes } from "./click";
 
 const search = createRoute({
   method: "get",
@@ -34,6 +36,9 @@ const search = createRoute({
 });
 
 export const searchRoutes = new OpenAPIHono();
+
+// Mount click tracking sub-route: POST /api/search/click
+searchRoutes.route("/", clickRoutes);
 
 searchRoutes.openapi(search, async (c) => {
   const validated = c.req.valid("query");
@@ -67,6 +72,7 @@ searchRoutes.openapi(search, async (c) => {
     refineHadithRerank: validated.refineHadithRerank,
     queryExpansionModel: validated.queryExpansionModel,
     includeGraph: validated.includeGraph !== "false",
+    embeddingModel: (validated.embeddingModel || "gemini") as EmbeddingModel,
   };
 
   try {
@@ -156,6 +162,40 @@ searchRoutes.openapi(search, async (c) => {
       ayahSearchMeta, totalAboveCutoff, rerankerTimedOut,
       _timing, refineStats,
     );
+
+    // Fire-and-forget analytics logging (only when frontend sends event ID)
+    const searchEventId = c.req.header("x-search-event-id");
+    if (searchEventId) {
+      const allResults = [
+        ...results.map((r, i) => ({
+          type: "book" as const,
+          docId: `${r.bookId}:${r.pageNumber}`,
+          score: r.score,
+          rank: r.rank ?? i + 1,
+        })),
+        ...ayahs.map((a, i) => ({
+          type: "quran" as const,
+          docId: `${a.surahNumber}:${a.ayahNumber}`,
+          score: a.score,
+          rank: a.rank ?? i + 1,
+        })),
+        ...hadiths.map((h, i) => ({
+          type: "hadith" as const,
+          docId: `${h.collectionSlug}:${h.hadithNumber}`,
+          score: h.score,
+          rank: h.rank ?? i + 1,
+        })),
+      ];
+      logSearchEvent(
+        searchEventId,
+        c.req.header("x-session-id"),
+        params.query,
+        params.mode,
+        params.refine,
+        allResults,
+        Date.now() - _timing.start,
+      );
+    }
 
     return c.json({
       query: params.query,

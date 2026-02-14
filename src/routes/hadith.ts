@@ -188,7 +188,7 @@ hadithRoutes.openapi(getHadithBook, async (c) => {
     book,
     hadiths: hadiths.map((h) => ({
       ...h,
-      sunnahUrl: generateSunnahUrl(slug, h.hadithNumber, bookNumber),
+      sunnahComUrl: generateSunnahUrl(slug, h.hadithNumber, bookNumber),
     })),
     total,
     limit,
@@ -230,7 +230,7 @@ hadithRoutes.openapi(getHadith, async (c) => {
   return c.json({
     hadith: {
       ...hadith,
-      sunnahUrl: generateSunnahUrl(slug, hadith.hadithNumber, hadith.book.bookNumber),
+      sunnahComUrl: generateSunnahUrl(slug, hadith.hadithNumber, hadith.book.bookNumber),
     },
     _sources: [...SOURCES.sunnah],
   }, 200);

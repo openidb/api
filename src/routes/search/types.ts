@@ -1,4 +1,6 @@
-export type RerankerType = "gpt-oss-20b" | "gpt-oss-120b" | "gemini-flash" | "none";
+export type RerankerType = "gpt-oss-20b" | "gpt-oss-120b" | "gemini-flash" | "jina" | "none";
+
+export type EmbeddingModel = "gemini" | "jina";
 
 export type SearchMode = "hybrid" | "semantic" | "keyword";
 
@@ -44,7 +46,7 @@ export interface AyahResult {
   translation?: string;
   juzNumber: number;
   pageNumber: number;
-  quranUrl: string;
+  quranComUrl: string;
   isChunk?: boolean;
   wordCount?: number;
 }
@@ -64,7 +66,7 @@ export interface HadithResult {
   text: string;
   chapterArabic: string | null;
   chapterEnglish: string | null;
-  sunnahUrl: string;
+  sunnahComUrl: string;
   translation?: string;
 }
 

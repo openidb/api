@@ -35,19 +35,42 @@ function isMeaningfulContent(text: string): boolean {
   return true;
 }
 
+function stripHtmlEntities(text: string): string {
+  return text
+    .replace(/<[^>]+>/g, "")
+    .replace(/&nbsp;/g, " ").replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<").replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"').replace(/&#39;/g, "'")
+    .replace(/\s+/g, " ").trim();
+}
+
 function extractParagraphs(html: string): { index: number; text: string }[] {
   const paragraphs: { index: number; text: string }[] = [];
+
+  // Try <p> tag extraction first
   const pRegex = /<p[^>]*>([\s\S]*?)<\/p>/gi;
   let match;
   let index = 0;
   while ((match = pRegex.exec(html)) !== null) {
-    const text = match[1]
-      .replace(/<[^>]+>/g, "")
-      .replace(/&nbsp;/g, " ").replace(/&amp;/g, "&")
-      .replace(/&lt;/g, "<").replace(/&gt;/g, ">")
-      .replace(/&quot;/g, '"').replace(/&#39;/g, "'")
-      .replace(/\s+/g, " ").trim();
+    const text = stripHtmlEntities(match[1]);
     if (isMeaningfulContent(text)) paragraphs.push({ index, text });
+    index++;
+  }
+  if (paragraphs.length > 0) return paragraphs;
+
+  // Fallback: newline splitting (Turath raw text format)
+  // Join multi-line title spans into single lines (matches frontend formatContentHtml)
+  html = html.replace(
+    /<span\s+data-type=['"]title['"][^>]*>[\s\S]*?<\/span>/g,
+    (m) => m.replace(/\n/g, " ")
+  );
+  const lines = html.split(/\n/);
+  index = 0;
+  for (const line of lines) {
+    const text = stripHtmlEntities(line);
+    if (isMeaningfulContent(text)) {
+      paragraphs.push({ index, text });
+    }
     index++;
   }
   return paragraphs;
@@ -415,13 +438,16 @@ Each paragraph is numbered with [N]. Return a JSON array where each element has 
 Only translate the text content - do not include the original Arabic or the [N] markers in the translation.
 Preserve the meaning and tone of the original text.
 
-IMPORTANT: Preserve Islamic terminology in their original Arabic form. Do NOT translate:
+IMPORTANT — Use the FULL PAGE as context when translating each paragraph. All paragraphs come from the same page of an Islamic scholarly text. If a word or phrase is ambiguous, use the surrounding paragraphs to disambiguate and determine the correct meaning. Always prefer the interpretation that is consistent with the rest of the page.
+
+IMPORTANT — Preserve Islamic terminology in their conventional English/transliterated forms:
+- Surah names: keep the standard transliteration (e.g. al-Baqarah, al-Qasas, al-Anfal, Yasin) — do NOT translate surah names into their literal meanings
 - "الله" → "Allah" (not "God")
 - "محمد" → "Muhammad" or "the Prophet Muhammad"
 - "القرآن" → "Quran" (not "the holy book")
 - "الرسول" → "the Messenger" or "the Prophet"
 - "صلى الله عليه وسلم" → "peace be upon him" or "ﷺ"
-- Other Islamic terms like: Salah, Zakat, Hajj, Iman, Taqwa, Sunnah, Hadith, etc.
+- Other Islamic terms like: Salah, Zakat, Hajj, Iman, Taqwa, Sunnah, Hadith, Fiqh, Tafsir, Ijma, Qiyas, etc.
 
 Arabic paragraphs:
 ${numberedParagraphs}

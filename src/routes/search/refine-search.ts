@@ -1,5 +1,6 @@
-import { generateEmbedding, normalizeArabicText } from "../../embeddings";
-import { QDRANT_QURAN_COLLECTION } from "../../qdrant";
+import { generateEmbedding, generateJinaEmbedding, normalizeArabicText } from "../../embeddings";
+import { QDRANT_QURAN_COLLECTION, QDRANT_QURAN_JINA_COLLECTION } from "../../qdrant";
+import type { EmbeddingModel } from "./types";
 import { startTimer } from "../../utils/timing";
 import { keywordSearchES } from "../../search/elasticsearch-search";
 import { shouldSkipSemanticSearch, getSearchStrategy } from "./query-utils";
@@ -46,7 +47,7 @@ export async function executeRefineSearch(params: SearchParams): Promise<RefineS
     refineOriginalWeight, refineExpandedWeight,
     refineBookPerQuery, refineAyahPerQuery, refineHadithPerQuery,
     refineBookRerank, refineAyahRerank, refineHadithRerank,
-    queryExpansionModel, similarityCutoff,
+    queryExpansionModel, similarityCutoff, embeddingModel,
   } = params;
 
   const fuzzyOptions = { fuzzyFallback: fuzzyEnabled };
@@ -55,6 +56,11 @@ export async function executeRefineSearch(params: SearchParams): Promise<RefineS
   const refineSearchOptions = { reranker, similarityCutoff: refineSimilarityCutoff };
   const refineHybridOptions = { ...refineSearchOptions, fuzzyFallback: fuzzyEnabled };
   const bookMetadataCache = new Map<string, { id: string; titleArabic: string; author: { nameArabic: string } }>();
+
+  const generateEmbeddingFn = embeddingModel === "jina"
+    ? (text: string) => generateJinaEmbedding(text, "retrieval.query")
+    : generateEmbedding;
+  const quranCollectionName = embeddingModel === "jina" ? QDRANT_QURAN_JINA_COLLECTION : QDRANT_QURAN_COLLECTION;
 
   const _refineTiming = { queryExpansion: 0, parallelSearches: 0, merge: 0, rerank: 0 };
 
@@ -80,10 +86,10 @@ export async function executeRefineSearch(params: SearchParams): Promise<RefineS
 
     const normalizedQ = normalizeArabicText(q);
     const shouldSkipSemantic = shouldSkipSemanticSearch(q);
-    const qEmbedding = shouldSkipSemantic ? undefined : await generateEmbedding(normalizedQ);
+    const qEmbedding = shouldSkipSemantic ? undefined : await generateEmbeddingFn(normalizedQ);
 
     const [bookSemantic, bookKeyword] = await Promise.all([
-      semanticSearch(q, refineBookPerQuery, null, refineSimilarityCutoff, qEmbedding).catch(err => { console.error("[RefineSearch] search error:", err.message); return []; }),
+      semanticSearch(q, refineBookPerQuery, null, refineSimilarityCutoff, qEmbedding, embeddingModel).catch(err => { console.error("[RefineSearch] search error:", err.message); return []; }),
       shouldSkipKeyword
         ? Promise.resolve([] as RankedResult[])
         : keywordSearchES(q, refineBookPerQuery, null, fuzzyOptions).catch(err => { console.error("[RefineSearch] search error:", err.message); return []; }),
@@ -95,18 +101,19 @@ export async function executeRefineSearch(params: SearchParams): Promise<RefineS
     let hadithResults: HadithRankedResult[] = [];
 
     if (shouldSkipKeyword) {
-      const defaultMeta: AyahSearchMeta = { collection: QDRANT_QURAN_COLLECTION, usedFallback: false, embeddingTechnique: "metadata-translation" };
+      const defaultMeta: AyahSearchMeta = { collection: quranCollectionName, usedFallback: false, embeddingTechnique: "metadata-translation" };
       ayahResults = includeQuran
-        ? (await searchAyahsSemantic(q, refineAyahPerQuery, refineSimilarityCutoff, qEmbedding).catch(err => { console.error("[RefineSearch] ayah search error:", err.message); return { results: [], meta: defaultMeta }; })).results
+        ? (await searchAyahsSemantic(q, refineAyahPerQuery, refineSimilarityCutoff, qEmbedding, embeddingModel).catch(err => { console.error("[RefineSearch] ayah search error:", err.message); return { results: [], meta: defaultMeta }; })).results
         : [];
       hadithResults = includeHadith
-        ? await searchHadithsSemantic(q, refineHadithPerQuery, refineSimilarityCutoff, qEmbedding).catch(err => { console.error("[RefineSearch] search error:", err.message); return []; })
+        ? await searchHadithsSemantic(q, refineHadithPerQuery, refineSimilarityCutoff, qEmbedding, embeddingModel).catch(err => { console.error("[RefineSearch] search error:", err.message); return []; })
         : [];
     } else {
       const refineHybridOptionsWithEmbedding = {
         ...refineHybridOptions,
         reranker: "none" as RerankerType,
         precomputedEmbedding: qEmbedding,
+        embeddingModel,
       };
       ayahResults = includeQuran
         ? await searchAyahsHybrid(q, refineAyahPerQuery, refineHybridOptionsWithEmbedding).catch(err => { console.error("[RefineSearch] search error:", err.message); return []; })

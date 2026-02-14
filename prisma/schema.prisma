@@ -21,25 +21,25 @@ model Author {
 
   // Names
   nameArabic String  @map("name_arabic")
-  nameLatin  String?  @map("name_latin")
+  nameLatin  String? @map("name_latin")
   kunya      String? // e.g., "أبو الفرج"
   nasab      String? // Genealogy
   nisba      String? // Place/tribe attribution
   laqab      String? // Title/epithet
 
   // Dates
-  birthDateHijri      String? @map("birth_date_hijri")
-  deathDateHijri      String? @map("death_date_hijri")
-  birthDateGregorian  String? @map("birth_date_gregorian")
-  deathDateGregorian  String? @map("death_date_gregorian")
+  birthDateHijri     String? @map("birth_date_hijri")
+  deathDateHijri     String? @map("death_date_hijri")
+  birthDateGregorian String? @map("birth_date_gregorian")
+  deathDateGregorian String? @map("death_date_gregorian")
 
   // Biography
   biography       String? @db.Text
   biographySource String? @map("biography_source")
 
   // Relationships
-  books       Book[]
-  otherWorks  AuthorWork[]
+  books      Book[]
+  otherWorks AuthorWork[]
 
   @@map("authors")
 }
@@ -56,8 +56,8 @@ model Category {
   nameEnglish String? @map("name_english")
 
   // Hierarchy
-  parentId Int?      @map("parent_id")
-  parent   Category? @relation("CategoryHierarchy", fields: [parentId], references: [id])
+  parentId Int?       @map("parent_id")
+  parent   Category?  @relation("CategoryHierarchy", fields: [parentId], references: [id])
   children Category[] @relation("CategoryHierarchy")
 
   // Relationships
@@ -100,7 +100,7 @@ model Book {
   updatedAt DateTime @updatedAt @map("updated_at")
 
   // Titles
-  titleArabic String @map("title_arabic")
+  titleArabic String  @map("title_arabic")
   titleLatin  String? @map("title_latin")
 
   // Author Relationship
@@ -127,9 +127,9 @@ model Book {
   isbn                     String?
 
   // Structure
-  totalVolumes       Int     @default(1) @map("total_volumes")
-  totalPages         Int?    @map("total_pages")
-  pageAlignmentNote  String? @map("page_alignment_note") // "موافق للمطبوع"
+  totalVolumes      Int     @default(1) @map("total_volumes")
+  totalPages        Int?    @map("total_pages")
+  pageAlignmentNote String? @map("page_alignment_note") // "موافق للمطبوع"
 
   // Editorial Information
   verificationStatus String? @map("verification_status") // "محقق" or "غير محقق"
@@ -138,9 +138,9 @@ model Book {
   supervisor         String?
 
   // Content
-  descriptionHtml  String? @db.Text @map("description_html")
-  summary          String? @db.Text
-  tableOfContents  Json?   @map("table_of_contents") // [{title, level, page}]
+  descriptionHtml String? @map("description_html") @db.Text
+  summary         String? @db.Text
+  tableOfContents Json?   @map("table_of_contents") // [{title, level, page}]
 
   // File Reference
   filename String // EPUB filename
@@ -176,10 +176,10 @@ model AuthorWork {
   id        Int      @id @default(autoincrement())
   createdAt DateTime @default(now()) @map("created_at")
 
-  authorId       String  @map("author_id")
-  bookId         String  @map("book_id")
-  title          String
-  isInCatalog    Boolean @default(false) @map("is_in_catalog")
+  authorId    String  @map("author_id")
+  bookId      String  @map("book_id")
+  title       String
+  isInCatalog Boolean @default(false) @map("is_in_catalog")
 
   author Author @relation(fields: [authorId], references: [id], onDelete: Cascade)
 
@@ -205,8 +205,8 @@ model Page {
   printedPageNumber Int?    @map("printed_page_number") // Page number as printed in book
 
   // Content
-  contentPlain String @db.Text @map("content_plain")
-  contentHtml  String @db.Text @map("content_html")
+  contentPlain String  @map("content_plain") @db.Text
+  contentHtml  String  @map("content_html") @db.Text
   contentHash  String? @map("content_hash")
 
   // Formatting Hints
@@ -251,10 +251,10 @@ model PageTranslation {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  pageId      Int    @map("page_id")
+  pageId      Int     @map("page_id")
   language    String // "en", "fr", "id", "ur", etc.
   model       String // "gemini-flash", "gpt-oss-120b" - stored for reference but not part of unique key
-  paragraphs  Json   // [{index: 0, translation: "..."}, ...]
+  paragraphs  Json // [{index: 0, translation: "..."}, ...]
   contentHash String? @map("content_hash")
 
   page Page @relation(fields: [pageId], references: [id], onDelete: Cascade)
@@ -282,14 +282,14 @@ model Surah {
 }
 
 model Ayah {
-  id          Int    @id @default(autoincrement())
-  surahId     Int    @map("surah_id")
-  ayahNumber  Int    @map("ayah_number")
-  textUthmani String @db.Text @map("text_uthmani")
-  textPlain   String @db.Text @map("text_plain") // For search
+  id          Int     @id @default(autoincrement())
+  surahId     Int     @map("surah_id")
+  ayahNumber  Int     @map("ayah_number")
+  textUthmani String  @map("text_uthmani") @db.Text
+  textPlain   String  @map("text_plain") @db.Text // For search
   contentHash String? @map("content_hash")
-  juzNumber   Int    @map("juz_number")
-  pageNumber  Int    @map("page_number") // Standard mushaf page
+  juzNumber   Int     @map("juz_number")
+  pageNumber  Int     @map("page_number") // Standard mushaf page
 
   surah Surah @relation(fields: [surahId], references: [id])
 
@@ -299,12 +299,12 @@ model Ayah {
 }
 
 model AyahTranslation {
-  id          Int    @id @default(autoincrement())
-  surahNumber Int    @map("surah_number")
-  ayahNumber  Int    @map("ayah_number")
+  id          Int     @id @default(autoincrement())
+  surahNumber Int     @map("surah_number")
+  ayahNumber  Int     @map("ayah_number")
   language    String // "en", "ur", "fr", "id", etc.
-  editionId   String @map("edition_id") // "eng-mustafakhattaba", etc.
-  text        String @db.Text
+  editionId   String  @map("edition_id") // "eng-mustafakhattaba", etc.
+  text        String  @db.Text
   contentHash String? @map("content_hash")
 
   @@unique([surahNumber, ayahNumber, editionId])
@@ -315,13 +315,13 @@ model AyahTranslation {
 }
 
 model AyahTafsir {
-  id          Int    @id @default(autoincrement())
-  surahNumber Int    @map("surah_number")
-  ayahNumber  Int    @map("ayah_number")
+  id          Int     @id @default(autoincrement())
+  surahNumber Int     @map("surah_number")
+  ayahNumber  Int     @map("ayah_number")
   source      String // "jalalayn", "ibn_kathir", etc. (kept for backward compat)
-  editionId   String @map("edition_id") // "ar-tafsir-ibn-kathir", "ar-jalalayn"
-  language    String @default("ar") // "ar", "en", "bn", etc.
-  text        String @db.Text
+  editionId   String  @map("edition_id") // "ar-tafsir-ibn-kathir", "ar-jalalayn"
+  language    String  @default("ar") // "ar", "en", "bn", etc.
+  text        String  @db.Text
   contentHash String? @map("content_hash")
 
   @@unique([surahNumber, ayahNumber, editionId])
@@ -333,24 +333,24 @@ model AyahTafsir {
 }
 
 model QuranTranslation {
-  id        String  @id              // "eng-mustafakhattaba"
-  language  String                   // ISO code: "en", "ar", etc.
-  name      String                   // Display name
-  author    String?                  // Translator name
-  source    String                   // "fawazahmed0"
-  direction String  @default("ltr")  // "ltr" | "rtl"
+  id        String  @id // "eng-mustafakhattaba"
+  language  String // ISO code: "en", "ar", etc.
+  name      String // Display name
+  author    String? // Translator name
+  source    String // "fawazahmed0"
+  direction String  @default("ltr") // "ltr" | "rtl"
 
   @@index([language])
   @@map("quran_translations")
 }
 
 model QuranTafsir {
-  id        String  @id              // "ar-tafsir-ibn-kathir"
-  language  String                   // ISO code: "en", "ar", etc.
-  name      String                   // Display name
-  author    String?                  // Author name
-  source    String                   // "spa5k-tafsir"
-  direction String  @default("ltr")  // "ltr" | "rtl"
+  id        String  @id // "ar-tafsir-ibn-kathir"
+  language  String // ISO code: "en", "ar", etc.
+  name      String // Display name
+  author    String? // Author name
+  source    String // "spa5k-tafsir"
+  direction String  @default("ltr") // "ltr" | "rtl"
 
   @@index([language])
   @@map("quran_tafsirs")
@@ -361,10 +361,10 @@ model QuranTafsir {
 // ============================================================================
 
 model HadithCollection {
-  id          Int     @id @default(autoincrement())
-  slug        String  @unique  // "bukhari", "muslim", etc.
-  nameEnglish String  @map("name_english")
-  nameArabic  String  @map("name_arabic")
+  id          Int    @id @default(autoincrement())
+  slug        String @unique // "bukhari", "muslim", etc.
+  nameEnglish String @map("name_english")
+  nameArabic  String @map("name_arabic")
 
   books HadithBook[]
 
@@ -372,11 +372,11 @@ model HadithCollection {
 }
 
 model HadithBook {
-  id           Int              @id @default(autoincrement())
-  collectionId Int              @map("collection_id")
-  bookNumber   Int              @map("book_number")
-  nameEnglish  String           @map("name_english")
-  nameArabic   String           @map("name_arabic")
+  id           Int    @id @default(autoincrement())
+  collectionId Int    @map("collection_id")
+  bookNumber   Int    @map("book_number")
+  nameEnglish  String @map("name_english")
+  nameArabic   String @map("name_arabic")
 
   collection HadithCollection @relation(fields: [collectionId], references: [id])
   hadiths    Hadith[]
@@ -387,15 +387,15 @@ model HadithBook {
 }
 
 model Hadith {
-  id               Int         @id @default(autoincrement())
-  bookId           Int         @map("book_id")
-  hadithNumber     String      @map("hadith_number")  // String for variants like "8a"
-  textArabic       String      @db.Text @map("text_arabic")
-  textPlain        String      @db.Text @map("text_plain")  // Diacritics removed for search
-  contentHash      String?     @map("content_hash")
-  chapterArabic    String?     @map("chapter_arabic")
-  chapterEnglish   String?     @map("chapter_english")
-  isChainVariation Boolean     @default(false) @map("is_chain_variation")  // True for hadiths that are only chain variations (no matn)
+  id               Int     @id @default(autoincrement())
+  bookId           Int     @map("book_id")
+  hadithNumber     String  @map("hadith_number") // String for variants like "8a"
+  textArabic       String  @map("text_arabic") @db.Text
+  textPlain        String  @map("text_plain") @db.Text // Diacritics removed for search
+  contentHash      String? @map("content_hash")
+  chapterArabic    String? @map("chapter_arabic")
+  chapterEnglish   String? @map("chapter_english")
+  isChainVariation Boolean @default(false) @map("is_chain_variation") // True for hadiths that are only chain variations (no matn)
 
   book HadithBook @relation(fields: [bookId], references: [id])
 
@@ -405,15 +405,164 @@ model Hadith {
 }
 
 model HadithTranslation {
-  id           Int    @id @default(autoincrement())
-  bookId       Int    @map("book_id")
-  hadithNumber String @map("hadith_number")
+  id           Int     @id @default(autoincrement())
+  bookId       Int     @map("book_id")
+  hadithNumber String  @map("hadith_number")
   language     String // "en" for now, expandable later
-  text         String @db.Text
+  text         String  @db.Text
   contentHash  String? @map("content_hash")
 
   @@unique([bookId, hadithNumber, language])
   @@index([bookId, hadithNumber])
   @@index([language])
   @@map("hadith_translations")
+}
+
+// ============================================================================
+// DICTIONARY
+// ============================================================================
+
+model DictionarySource {
+  id          Int      @id @default(autoincrement())
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+  slug        String   @unique                          // "lisan-al-arab"
+  nameArabic  String   @map("name_arabic")              // "لسان العرب"
+  nameEnglish String   @map("name_english")             // "Lisan al-Arab"
+  author      String?
+  bookId      String?  @map("book_id")                  // "1687"
+  description String?  @db.Text
+
+  entries    DictionaryEntry[]
+  subEntries DictionarySubEntry[]
+
+  @@map("dictionary_sources")
+}
+
+model DictionaryEntry {
+  id                 Int      @id @default(autoincrement())
+  createdAt          DateTime @default(now()) @map("created_at")
+  sourceId           Int      @map("source_id")
+  root               String   @db.Text
+  rootNormalized     String   @map("root_normalized") @db.Text
+  headword           String   @db.Text
+  headwordNormalized String   @map("headword_normalized") @db.Text
+  headwordVocalized  String   @default("") @map("headword_vocalized") @db.Text
+  definitionHtml     String   @map("definition_html") @db.Text
+  definitionPlain    String   @map("definition_plain") @db.Text
+  contentHash        String?  @map("content_hash")
+  bookId             String?  @map("book_id")
+  startPage          Int?     @map("start_page")
+  endPage            Int?     @map("end_page")
+
+  source     DictionarySource   @relation(fields: [sourceId], references: [id], onDelete: Cascade)
+  subEntries DictionarySubEntry[]
+
+  @@index([sourceId])
+  @@index([rootNormalized])
+  @@index([headwordNormalized])
+  @@index([headwordVocalized])
+  @@map("dictionary_entries")
+}
+
+model DictionarySubEntry {
+  id                 Int      @id @default(autoincrement())
+  createdAt          DateTime @default(now()) @map("created_at")
+  entryId            Int?     @map("entry_id")
+  sourceId           Int      @map("source_id")
+  headword           String   @db.Text           // "الْحُرُّ" (vocalized)
+  headwordNormalized String   @map("headword_normalized") @db.Text
+  headwordVocalized  String   @default("") @map("headword_vocalized") @db.Text
+  root               String   @db.Text
+  rootNormalized     String   @map("root_normalized") @db.Text
+  definitionHtml     String   @map("definition_html") @db.Text
+  definitionPlain    String   @map("definition_plain") @db.Text
+  position           Int      @default(0)
+  bookId             String?  @map("book_id")
+  pageNumber         Int?     @map("page_number")
+
+  entry  DictionaryEntry?  @relation(fields: [entryId], references: [id], onDelete: SetNull)
+  source DictionarySource @relation(fields: [sourceId], references: [id], onDelete: Cascade)
+
+  @@index([sourceId])
+  @@index([entryId])
+  @@index([headwordNormalized])
+  @@index([headwordVocalized])
+  @@index([rootNormalized])
+  @@index([bookId, pageNumber])
+  @@map("dictionary_sub_entries")
+}
+
+model ArabicRoot {
+  id           Int     @id @default(autoincrement())
+  word         String  @db.Text   // normalized surface form: "كتاب"
+  root         String  @db.Text   // 3-letter root: "كتب"
+  vocalized    String? @db.Text   // vocalized form: "كَاتِبٌ"
+  pattern      String? @db.Text   // wazn pattern: "فَاعِلٌ"
+  wordType     String? @map("word_type")  // e.g., "اسم فاعل", "مصدر"
+  definition   String? @db.Text
+  partOfSpeech String? @map("part_of_speech") // "noun" | "verb"
+  source       String? @db.VarChar(30) // "arramooz" | "taj-derivatives" | "dictionary" | "generated"
+
+  @@unique([word, root])
+  @@index([word])
+  @@index([root])
+  @@map("arabic_roots")
+}
+
+// ============================================================================
+// SEARCH ANALYTICS
+// ============================================================================
+
+/// Search analytics for embedding model training and diagnostics.
+/// 1 row per search query. topResults stores ranked results as compact JSON.
+model SearchEvent {
+  id          String   @id @default(uuid())
+  sessionId   String?  @map("session_id")
+  query       String
+  mode        String   // "hybrid" | "semantic" | "keyword"
+  isRefine    Boolean  @default(false) @map("is_refine")
+  resultCount Int      @default(0) @map("result_count")
+  totalTimeMs Int?     @map("total_time_ms")
+  topResults  Json?    @map("top_results") // [{t,d,s,r}] — type, docId, score, rank (top 20)
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  clicks SearchClick[]
+
+  @@index([createdAt])
+  @@index([sessionId])
+  @@map("search_events")
+}
+
+/// A user click on a search result. Primary positive relevance signal
+/// for contrastive embedding training: (query, clicked_doc) = positive pair.
+model SearchClick {
+  id            String      @id @default(uuid())
+  searchEventId String      @map("search_event_id")
+  searchEvent   SearchEvent @relation(fields: [searchEventId], references: [id], onDelete: Cascade)
+  resultType    String      @map("result_type") // "book" | "quran" | "hadith"
+  docId         String      @map("doc_id")      // "{bookId}:{page}", "{surah}:{ayah}", "{collection}:{number}"
+  rank          Int         // position clicked (1-based)
+  createdAt     DateTime    @default(now()) @map("created_at")
+
+  @@index([searchEventId])
+  @@map("search_clicks")
+}
+
+/// Book reader interaction events for usage analytics.
+/// Single table: each row = one user action (open, page_view, pdf_open, word_lookup).
+model BookEvent {
+  id         String   @id @default(uuid())
+  sessionId  String?  @map("session_id")
+  bookId     String   @map("book_id")
+  action     String   // "open" | "page_view" | "pdf_open" | "word_lookup"
+  pageNumber Int?     @map("page_number")
+  durationMs Int?     @map("duration_ms")  // time on page (page_view only)
+  word       String?                       // looked-up word (word_lookup only)
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  @@index([createdAt])
+  @@index([sessionId])
+  @@index([bookId])
+  @@map("book_events")
 }

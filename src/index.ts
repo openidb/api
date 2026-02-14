@@ -13,6 +13,8 @@ import { centuriesRoutes } from "./routes/centuries";
 import { searchRoutes } from "./routes/search";
 import { transcribeRoutes } from "./routes/transcribe";
 import { statsRoutes } from "./routes/stats";
+import { dictionaryRoutes } from "./routes/dictionary";
+import { bookEventRoutes } from "./routes/book-events";
 import { apiRateLimit, searchRateLimit, expensiveRateLimit } from "./middleware/rate-limit";
 import { timeout } from "./middleware/timeout";
 import { requestLogger } from "./middleware/request-logger";
@@ -45,7 +47,7 @@ app.use(
   cors({
     origin: allowedOrigins,
     allowMethods: ["GET", "POST", "OPTIONS"],
-    allowHeaders: ["Content-Type", "Authorization"],
+    allowHeaders: ["Content-Type", "Authorization", "x-search-event-id", "x-session-id"],
     maxAge: 86400,
   })
 );
@@ -81,12 +83,14 @@ app.use("/api/books/:id/pages/:page/translate", expensiveRateLimit);
 app.route("/api/search", searchRoutes);
 app.route("/api/quran", quranRoutes);
 app.route("/api/hadith", hadithRoutes);
+app.route("/api/books", bookEventRoutes);
 app.route("/api/books/authors", authorsRoutes);
 app.route("/api/books/categories", categoriesRoutes);
 app.route("/api/books/centuries", centuriesRoutes);
 app.route("/api/books", booksRoutes);
 app.route("/api/transcribe", transcribeRoutes);
 app.route("/api/stats", statsRoutes);
+app.route("/api/dictionary", dictionaryRoutes);
 
 // Health check — pings Postgres, Qdrant, Elasticsearch, and S3 (RustFS)
 app.get("/api/health", async (c) => {

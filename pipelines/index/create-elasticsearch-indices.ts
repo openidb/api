@@ -7,6 +7,7 @@
  * Usage: bun run scripts/create-elasticsearch-indices.ts
  */
 
+import "../env";
 import { elasticsearch } from "../../src/search/elasticsearch";
 import {
   pagesIndexConfig,

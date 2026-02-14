@@ -67,7 +67,7 @@ export const AyahSchema = z.object({
   contentHash: z.string().nullable(),
   juzNumber: z.number().nullable(),
   pageNumber: z.number().nullable(),
-  quranUrl: z.string(),
+  quranComUrl: z.string(),
 });
 
 export const SurahDetailResponse = z.object({

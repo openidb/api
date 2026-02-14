@@ -1,6 +1,6 @@
 import { prisma } from "../../db";
 import { startTimer } from "../../utils/timing";
-import { EMBEDDING_DIMENSIONS } from "../../embeddings";
+import { EMBEDDING_DIMENSIONS, JINA_EMBEDDING_DIMENSIONS } from "../../embeddings";
 import {
   searchEntities,
   resolveSources,
@@ -299,11 +299,14 @@ export async function buildDebugStats(
     timing: { queryExpansion: number; parallelSearches: number; merge: number; rerank: number };
   },
 ): Promise<SearchDebugStats> {
-  const { mode, similarityCutoff, reranker, refine, queryExpansionModel, query } = params;
+  const { mode, similarityCutoff, reranker, refine, queryExpansionModel, query, embeddingModel } = params;
   const shouldSkipKeyword = getSearchStrategy(query) === 'semantic_only' || mode === "semantic";
   const databaseStats = await getDatabaseStats();
 
   const top5Breakdown = buildTopResultsBreakdown(results, rankedResults, ayahs, hadiths);
+
+  const embModelLabel = embeddingModel === "jina" ? "Jina embeddings-v3" : "Google Gemini embedding-001";
+  const embDimensions = embeddingModel === "jina" ? JINA_EMBEDDING_DIMENSIONS : EMBEDDING_DIMENSIONS;
 
   return {
     databaseStats,
@@ -321,8 +324,8 @@ export async function buildDebugStats(
       keywordEngine: 'elasticsearch',
       bm25Params: { k1: 1.2, b: 0.75, normK: 5 },
       rrfK: RRF_K,
-      embeddingModel: "Google Gemini embedding-001",
-      embeddingDimensions: EMBEDDING_DIMENSIONS,
+      embeddingModel: embModelLabel,
+      embeddingDimensions: embDimensions,
       rerankerModel: reranker === 'none' ? null : reranker,
       queryExpansionModel: refine ? getQueryExpansionModelId(queryExpansionModel) : null,
       quranCollection: ayahSearchMeta.collection,

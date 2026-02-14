@@ -1,4 +1,4 @@
-import type { RerankerType, SearchMode } from "./types";
+import type { RerankerType, SearchMode, EmbeddingModel } from "./types";
 
 export interface SearchParams {
   query: string;
@@ -28,4 +28,5 @@ export interface SearchParams {
   refineHadithRerank: number;
   queryExpansionModel: string;
   includeGraph: boolean;
+  embeddingModel: EmbeddingModel;
 }

@@ -163,6 +163,7 @@ services:
       OPENIDB_URL: http://openidb:4000
       SITE_URL: ${SITE_URL:-https://sabeel.dev}
       INTERNAL_API_SECRET: ${INTERNAL_API_SECRET:?Set INTERNAL_API_SECRET in .env}
+      CSRF_SECRET: ${CSRF_SECRET:?Set CSRF_SECRET in .env}
     deploy:
       resources:
         limits:

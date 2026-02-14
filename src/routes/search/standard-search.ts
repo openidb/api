@@ -1,5 +1,6 @@
-import { generateEmbedding, normalizeArabicText } from "../../embeddings";
-import { QDRANT_QURAN_COLLECTION } from "../../qdrant";
+import { generateEmbedding, generateJinaEmbedding, normalizeArabicText } from "../../embeddings";
+import { QDRANT_QURAN_COLLECTION, QDRANT_QURAN_JINA_COLLECTION } from "../../qdrant";
+import type { EmbeddingModel } from "./types";
 import { startTimer } from "../../utils/timing";
 import { normalizeBM25Score } from "../../search/bm25";
 import {
@@ -54,7 +55,7 @@ export async function executeStandardSearch(params: SearchParams): Promise<Stand
   const {
     query, mode, bookId, limit, bookLimit, similarityCutoff,
     includeQuran, includeHadith, includeBooks,
-    fuzzyEnabled,
+    fuzzyEnabled, embeddingModel,
   } = params;
 
   const fuzzyOptions = { fuzzyFallback: fuzzyEnabled };
@@ -66,6 +67,11 @@ export async function executeStandardSearch(params: SearchParams): Promise<Stand
   const fetchLimit = mode === "hybrid" ? STANDARD_FETCH_LIMIT : limit;
   const ayahLimit = Math.min(limit, DEFAULT_AYAH_LIMIT);
   const hadithLimit = Math.min(limit, DEFAULT_HADITH_LIMIT);
+
+  const generateEmbeddingFn = embeddingModel === "jina"
+    ? (text: string) => generateJinaEmbedding(text, "retrieval.query")
+    : generateEmbedding;
+  const quranCollectionName = embeddingModel === "jina" ? QDRANT_QURAN_JINA_COLLECTION : QDRANT_QURAN_COLLECTION;
 
   const timing = {
     embedding: 0,
@@ -79,7 +85,7 @@ export async function executeStandardSearch(params: SearchParams): Promise<Stand
   const embeddingPromise = shouldSkipSemantic
     ? Promise.resolve(undefined)
     : Promise.race([
-        generateEmbedding(normalizedQuery),
+        generateEmbeddingFn(normalizedQuery),
         new Promise<undefined>((_, reject) => setTimeout(() => reject(new Error("Embedding generation timeout")), 5000)),
       ]).catch(err => { console.error("[SearchEngine] embedding:", err.message); return undefined; });
 
@@ -112,23 +118,23 @@ export async function executeStandardSearch(params: SearchParams): Promise<Stand
   const semBooksTimer = startTimer();
   const semanticBooksPromise = (mode === "keyword" || !includeBooks)
     ? Promise.resolve([] as RankedResult[])
-    : semanticSearch(query, fetchLimit, bookId, similarityCutoff, queryEmbedding)
+    : semanticSearch(query, fetchLimit, bookId, similarityCutoff, queryEmbedding, embeddingModel)
         .then(res => { timing.semantic.books = semBooksTimer(); return res; })
         .catch(err => { console.error("[SearchEngine] semantic books:", err.message); return [] as RankedResult[]; });
 
-  const defaultAyahMeta: AyahSearchMeta = { collection: QDRANT_QURAN_COLLECTION, usedFallback: false, embeddingTechnique: "metadata-translation" };
+  const defaultAyahMeta: AyahSearchMeta = { collection: quranCollectionName, usedFallback: false, embeddingTechnique: "metadata-translation" };
 
   const semAyahsTimer = startTimer();
   const semanticAyahsPromise = (mode === "keyword" || bookId || !includeQuran)
     ? Promise.resolve({ results: [] as AyahRankedResult[], meta: defaultAyahMeta })
-    : searchAyahsSemantic(query, fetchLimit, similarityCutoff, queryEmbedding)
+    : searchAyahsSemantic(query, fetchLimit, similarityCutoff, queryEmbedding, embeddingModel)
         .then(res => { timing.semantic.ayahs = semAyahsTimer(); return res; })
         .catch(err => { console.error("[SearchEngine] semantic ayahs:", err.message); return { results: [] as AyahRankedResult[], meta: defaultAyahMeta }; });
 
   const semHadithsTimer = startTimer();
   const semanticHadithsPromise = (mode === "keyword" || bookId || !includeHadith)
     ? Promise.resolve([] as HadithRankedResult[])
-    : searchHadithsSemantic(query, fetchLimit, similarityCutoff, queryEmbedding)
+    : searchHadithsSemantic(query, fetchLimit, similarityCutoff, queryEmbedding, embeddingModel)
         .then(res => { timing.semantic.hadiths = semHadithsTimer(); return res; })
         .catch(err => { console.error("[SearchEngine] semantic hadiths:", err.message); return [] as HadithRankedResult[]; });
 

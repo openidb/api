@@ -4,11 +4,16 @@ import {
   QDRANT_AUTHORS_COLLECTION,
   QDRANT_QURAN_COLLECTION,
   QDRANT_HADITH_COLLECTION,
+  QDRANT_QURAN_JINA_COLLECTION,
+  QDRANT_HADITH_JINA_COLLECTION,
+  QDRANT_PAGES_JINA_COLLECTION,
 } from "../../qdrant";
 import {
   generateEmbedding,
+  generateJinaEmbedding,
   normalizeArabicText,
 } from "../../embeddings";
+import type { EmbeddingModel } from "./types";
 import { prisma } from "../../db";
 import { normalizeBM25Score } from "../../search/bm25";
 import {
@@ -34,6 +39,26 @@ import type {
 } from "./types";
 
 /**
+ * Get embedding function and collection names based on embedding model
+ */
+function getEmbeddingConfig(model: EmbeddingModel = "gemini") {
+  if (model === "jina") {
+    return {
+      generateEmbeddingFn: (text: string) => generateJinaEmbedding(text, "retrieval.query"),
+      pagesCollection: QDRANT_PAGES_JINA_COLLECTION,
+      quranCollection: QDRANT_QURAN_JINA_COLLECTION,
+      hadithCollection: QDRANT_HADITH_JINA_COLLECTION,
+    };
+  }
+  return {
+    generateEmbeddingFn: generateEmbedding,
+    pagesCollection: QDRANT_COLLECTION,
+    quranCollection: QDRANT_QURAN_COLLECTION,
+    hadithCollection: QDRANT_HADITH_COLLECTION,
+  };
+}
+
+/**
  * Perform semantic search for books using Qdrant
  */
 export async function semanticSearch(
@@ -42,20 +67,22 @@ export async function semanticSearch(
   bookId: string | null,
   similarityCutoff: number = 0.25,
   precomputedEmbedding?: number[],
+  embeddingModel: EmbeddingModel = "gemini",
 ): Promise<RankedResult[]> {
   if (shouldSkipSemanticSearch(query)) {
     return [];
   }
 
+  const config = getEmbeddingConfig(embeddingModel);
   const normalizedQuery = normalizeArabicText(query);
   const effectiveCutoff = getDynamicSimilarityThreshold(query, similarityCutoff);
-  const queryEmbedding = precomputedEmbedding ?? await generateEmbedding(normalizedQuery);
+  const queryEmbedding = precomputedEmbedding ?? await config.generateEmbeddingFn(normalizedQuery);
 
   const filter = bookId
     ? { must: [{ key: "bookId", match: { value: bookId } }] }
     : undefined;
 
-  const searchResults = await qdrant.search(QDRANT_COLLECTION, {
+  const searchResults = await qdrant.search(config.pagesCollection, {
     vector: queryEmbedding,
     limit: limit,
     filter: filter,
@@ -171,9 +198,11 @@ export async function searchAyahsSemantic(
   limit: number = 10,
   similarityCutoff: number = DEFAULT_AYAH_SIMILARITY_CUTOFF,
   precomputedEmbedding?: number[],
+  embeddingModel: EmbeddingModel = "gemini",
 ): Promise<AyahSemanticSearchResult> {
+  const emConfig = getEmbeddingConfig(embeddingModel);
   const defaultMeta: AyahSearchMeta = {
-    collection: QDRANT_QURAN_COLLECTION,
+    collection: emConfig.quranCollection,
     usedFallback: false,
     embeddingTechnique: "metadata-translation",
   };
@@ -185,9 +214,9 @@ export async function searchAyahsSemantic(
 
     const normalizedQuery = normalizeArabicText(query);
     const effectiveCutoff = getDynamicSimilarityThreshold(query, similarityCutoff);
-    const queryEmbedding = precomputedEmbedding ?? await generateEmbedding(normalizedQuery);
+    const queryEmbedding = precomputedEmbedding ?? await emConfig.generateEmbeddingFn(normalizedQuery);
 
-    const searchResults = await qdrant.search(QDRANT_QURAN_COLLECTION, {
+    const searchResults = await qdrant.search(emConfig.quranCollection, {
       vector: queryEmbedding,
       limit: limit,
       with_payload: true,
@@ -195,7 +224,7 @@ export async function searchAyahsSemantic(
     });
 
     const meta: AyahSearchMeta = {
-      collection: QDRANT_QURAN_COLLECTION,
+      collection: emConfig.quranCollection,
       usedFallback: false,
       embeddingTechnique: "metadata-translation",
     };
@@ -224,7 +253,7 @@ export async function searchAyahsSemantic(
         text: payload.text,
         juzNumber: payload.juzNumber,
         pageNumber: payload.pageNumber,
-        quranUrl: generateQuranUrl(payload.surahNumber, payload.ayahNumber),
+        quranComUrl: generateQuranUrl(payload.surahNumber, payload.ayahNumber),
         semanticRank: index + 1,
       };
     });
@@ -232,7 +261,7 @@ export async function searchAyahsSemantic(
     return { results, meta };
   } catch (err) {
     console.error("[searchAyahsSemantic] ERROR:", err);
-    return { results: [], meta: { collection: QDRANT_QURAN_COLLECTION, usedFallback: true } };
+    return { results: [], meta: { collection: emConfig.quranCollection, usedFallback: true } };
   }
 }
 
@@ -279,15 +308,14 @@ async function hybridSearchWithRerank<T extends { semanticRank?: number; keyword
 export async function searchAyahsHybrid(
   query: string,
   limit: number = 10,
-  options: { reranker?: RerankerType; preRerankLimit?: number; postRerankLimit?: number; similarityCutoff?: number; fuzzyFallback?: boolean; precomputedEmbedding?: number[] } = {}
+  options: { reranker?: RerankerType; preRerankLimit?: number; postRerankLimit?: number; similarityCutoff?: number; fuzzyFallback?: boolean; precomputedEmbedding?: number[]; embeddingModel?: EmbeddingModel } = {}
 ): Promise<AyahResult[]> {
-  const { reranker = "none", preRerankLimit = 60, postRerankLimit = limit, similarityCutoff = 0.6, fuzzyFallback = true, precomputedEmbedding } = options;
-  const defaultMeta: AyahSearchMeta = { collection: QDRANT_QURAN_COLLECTION, usedFallback: false, embeddingTechnique: "metadata-translation" };
+  const { reranker = "none", preRerankLimit = 60, postRerankLimit = limit, similarityCutoff = 0.6, fuzzyFallback = true, precomputedEmbedding, embeddingModel = "gemini" } = options;
 
   return hybridSearchWithRerank({
     query, limit, reranker, preRerankLimit, postRerankLimit, preRerankCap: AYAH_PRE_RERANK_CAP,
     semanticSearch: (fetchLimit) =>
-      searchAyahsSemantic(query, fetchLimit, similarityCutoff, precomputedEmbedding)
+      searchAyahsSemantic(query, fetchLimit, similarityCutoff, precomputedEmbedding, embeddingModel)
         .then(r => r.results)
         .catch(err => { console.error("[SearchEngine] ayah semantic fallback:", err.message); return [] as AyahRankedResult[]; }),
     keywordSearch: (fetchLimit) => keywordSearchAyahsES(query, fetchLimit, { fuzzyFallback }),
@@ -304,17 +332,19 @@ export async function searchHadithsSemantic(
   limit: number = 10,
   similarityCutoff: number = 0.25,
   precomputedEmbedding?: number[],
+  embeddingModel: EmbeddingModel = "gemini",
 ): Promise<HadithRankedResult[]> {
   try {
     if (shouldSkipSemanticSearch(query)) {
       return [];
     }
 
+    const emConfig = getEmbeddingConfig(embeddingModel);
     const normalizedQuery = normalizeArabicText(query);
     const effectiveCutoff = getDynamicSimilarityThreshold(query, similarityCutoff);
-    const queryEmbedding = precomputedEmbedding ?? await generateEmbedding(normalizedQuery);
+    const queryEmbedding = precomputedEmbedding ?? await emConfig.generateEmbeddingFn(normalizedQuery);
 
-    const searchResults = await qdrant.search(QDRANT_HADITH_COLLECTION, {
+    const searchResults = await qdrant.search(emConfig.hadithCollection, {
       vector: queryEmbedding,
       limit: limit,
       with_payload: true,
@@ -392,7 +422,7 @@ export async function searchHadithsSemantic(
         text: payload.text,
         chapterArabic: payload.chapterArabic,
         chapterEnglish: payload.chapterEnglish,
-        sunnahUrl: (payload.sunnahUrl || payload.sunnahComUrl || '').replace(/(\d)[A-Z]+$/, '$1'),
+        sunnahComUrl: (payload.sunnahUrl || payload.sunnahComUrl || '').replace(/(\d)[A-Z]+$/, '$1'),
         semanticRank: index + 1,
       };
     });
@@ -408,14 +438,14 @@ export async function searchHadithsSemantic(
 export async function searchHadithsHybrid(
   query: string,
   limit: number = 10,
-  options: { reranker?: RerankerType; preRerankLimit?: number; postRerankLimit?: number; similarityCutoff?: number; fuzzyFallback?: boolean; precomputedEmbedding?: number[] } = {}
+  options: { reranker?: RerankerType; preRerankLimit?: number; postRerankLimit?: number; similarityCutoff?: number; fuzzyFallback?: boolean; precomputedEmbedding?: number[]; embeddingModel?: EmbeddingModel } = {}
 ): Promise<HadithResult[]> {
-  const { reranker = "none", preRerankLimit = 60, postRerankLimit = limit, similarityCutoff = 0.6, fuzzyFallback = true, precomputedEmbedding } = options;
+  const { reranker = "none", preRerankLimit = 60, postRerankLimit = limit, similarityCutoff = 0.6, fuzzyFallback = true, precomputedEmbedding, embeddingModel = "gemini" } = options;
 
   return hybridSearchWithRerank({
     query, limit, reranker, preRerankLimit, postRerankLimit, preRerankCap: HADITH_PRE_RERANK_CAP,
     semanticSearch: (fetchLimit) =>
-      searchHadithsSemantic(query, fetchLimit, similarityCutoff, precomputedEmbedding),
+      searchHadithsSemantic(query, fetchLimit, similarityCutoff, precomputedEmbedding, embeddingModel),
     keywordSearch: (fetchLimit) => keywordSearchHadithsES(query, fetchLimit, { fuzzyFallback }),
     getKey: (h) => `${h.collectionSlug}-${h.hadithNumber}`,
     formatForReranking: (h) => formatHadithForReranking(h),

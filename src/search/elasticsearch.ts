@@ -6,6 +6,7 @@
  */
 
 import { Client } from "@elastic/elasticsearch";
+import { HttpConnection } from "@elastic/transport";
 
 const globalForES = globalThis as unknown as {
   elasticsearch: Client | undefined;
@@ -19,6 +20,7 @@ export const elasticsearch =
       username: "elastic",
       password: process.env.ELASTIC_PASSWORD || "",
     },
+    Connection: HttpConnection,
   });
 
 if (process.env.NODE_ENV !== "production") {

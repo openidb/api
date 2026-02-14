@@ -41,12 +41,17 @@ export const QDRANT_QURAN_COLLECTION =
 export const QDRANT_HADITH_COLLECTION =
   process.env.QDRANT_HADITH_COLLECTION || "sunnah_hadiths";
 
+// Jina v3 collections (1024d, separate from Gemini 3072d collections)
+export const QDRANT_QURAN_JINA_COLLECTION = "quran_ayahs_jina";
+export const QDRANT_HADITH_JINA_COLLECTION = "sunnah_hadiths_jina";
+export const QDRANT_PAGES_JINA_COLLECTION = "arabic_texts_pages_jina";
+
 // Aliases for backwards compatibility with scripts
 export const PAGES_COLLECTION = QDRANT_COLLECTION;
 export const HADITHS_COLLECTION = QDRANT_HADITH_COLLECTION;
 export const QURAN_COLLECTION = QDRANT_QURAN_COLLECTION;
 
 // Re-export from constants
-export { EMBEDDING_DIMENSIONS } from "./constants";
+export { EMBEDDING_DIMENSIONS, JINA_EMBEDDING_DIMENSIONS } from "./constants";
 
 export default qdrant;

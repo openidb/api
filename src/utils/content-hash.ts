@@ -13,6 +13,7 @@
  *   HadithTranslation: hadith-translation:{collectionSlug}:{hadithNumber}:{language}:{text}
  *   Page:              page:{bookId}:{pageNumber}:{contentPlain}
  *   PageTranslation:   page-translation:{bookId}:{pageNumber}:{language}:{paragraphsJson}
+ *   DictionaryEntry:   dict-entry:{sourceSlug}:{headword}:{definitionPlain}
  */
 
 import { createHash } from "crypto";
@@ -67,4 +68,12 @@ export function hashPageTranslation(
   paragraphs: unknown,
 ): string {
   return sha256(`page-translation:${bookId}:${pageNumber}:${language}:${JSON.stringify(paragraphs)}`);
+}
+
+export function hashDictionaryEntry(
+  sourceSlug: string,
+  headword: string,
+  definitionPlain: string,
+): string {
+  return sha256(`dict-entry:${sourceSlug}:${headword}:${definitionPlain}`);
 }

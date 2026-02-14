@@ -4,7 +4,7 @@
  * Syncs pages, hadiths, and ayahs from PostgreSQL to Elasticsearch.
  * Uses bulk indexing for performance.
  *
- * Usage: bun run scripts/sync-elasticsearch.ts
+ * Usage: bun run scripts/sync-elasticsearch.ts [--skip-pages]
  */
 
 import "../env";
@@ -17,6 +17,7 @@ import {
 } from "../../src/search/elasticsearch";
 // Types are handled inline
 
+const skipPagesFlag = process.argv.includes("--skip-pages");
 const BATCH_SIZE = 1000;
 
 interface BulkOperation {
@@ -304,7 +305,11 @@ async function main() {
 
   const startTime = Date.now();
 
-  await syncPages();
+  if (skipPagesFlag) {
+    console.log("Skipping pages sync (--skip-pages mode)");
+  } else {
+    await syncPages();
+  }
   await syncHadiths();
   await syncAyahs();
 
@@ -312,14 +317,16 @@ async function main() {
   console.log(`\n=== Sync completed in ${totalTime}s ===`);
 
   // Final summary
-  const [pagesCount, hadithsCount, ayahsCount] = await Promise.all([
-    elasticsearch.count({ index: ES_PAGES_INDEX }),
+  const [hadithsCount, ayahsCount] = await Promise.all([
     elasticsearch.count({ index: ES_HADITHS_INDEX }),
     elasticsearch.count({ index: ES_AYAHS_INDEX }),
   ]);
 
   console.log("\nFinal counts:");
-  console.log(`  Pages:   ${pagesCount.count}`);
+  if (!skipPagesFlag) {
+    const pagesCount = await elasticsearch.count({ index: ES_PAGES_INDEX });
+    console.log(`  Pages:   ${pagesCount.count}`);
+  }
   console.log(`  Hadiths: ${hadithsCount.count}`);
   console.log(`  Ayahs:   ${ayahsCount.count}`);
 

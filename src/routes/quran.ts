@@ -171,7 +171,7 @@ quranRoutes.openapi(getSurah, async (c) => {
       ...surah,
       ayahs: surah.ayahs.map((a) => ({
         ...a,
-        quranUrl: generateQuranUrl(number, a.ayahNumber),
+        quranComUrl: generateQuranUrl(number, a.ayahNumber),
       })),
     },
     _sources: [...SOURCES.quranCloud],
@@ -216,7 +216,7 @@ quranRoutes.openapi(listAyahs, async (c) => {
   return c.json({
     ayahs: ayahs.map((a) => ({
       ...a,
-      quranUrl: generateQuranUrl(a.surah.number, a.ayahNumber),
+      quranComUrl: generateQuranUrl(a.surah.number, a.ayahNumber),
     })),
     total,
     limit,

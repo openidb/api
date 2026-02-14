@@ -98,11 +98,11 @@ function parseEnglishFromBookHtml(html: string, collectionSlug: string): Transla
     // Get hadith number from reference link or sticky reference
     let hadithNumber = "";
 
-    // Try getting from reference sticky (e.g., "Sahih al-Bukhari 1")
+    // Try getting from reference sticky (e.g., "Sahih al-Bukhari 1", "Sahih Muslim 8 a")
     const stickyRef = $container.prevAll(".hadith_reference_sticky").first().text().trim();
-    const stickyMatch = stickyRef.match(/(\d+[a-z]?)$/i);
+    const stickyMatch = stickyRef.match(/(\d+)\s?([a-z]?)$/i);
     if (stickyMatch) {
-      hadithNumber = stickyMatch[1];
+      hadithNumber = stickyMatch[1] + stickyMatch[2].toLowerCase();
     }
 
     // Fallback: try anchor name
@@ -116,9 +116,9 @@ function parseEnglishFromBookHtml(html: string, collectionSlug: string): Transla
     // Fallback: try reference link
     if (!hadithNumber) {
       const refLink = $container.find(`a[href^="/${collectionSlug}:"]`).attr("href");
-      const refMatch = refLink?.match(/:(\d+[a-z]?)$/i);
+      const refMatch = refLink?.match(/:(\d+)\s?([a-z]?)$/i);
       if (refMatch) {
-        hadithNumber = refMatch[1];
+        hadithNumber = refMatch[1] + refMatch[2].toLowerCase();
       }
     }
 
