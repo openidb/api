@@ -375,6 +375,22 @@ model QuranReciter {
   @@map("quran_reciters")
 }
 
+model WordTranslation {
+  id              Int     @id @default(autoincrement())
+  surahNumber     Int     @map("surah_number")
+  ayahNumber      Int     @map("ayah_number")
+  wordPosition    Int     @map("word_position") // 1-indexed position within the ayah
+  language        String  // ISO code: "en", etc.
+  text            String  // Translation text
+  transliteration String? // Optional transliteration
+  source          String  @default("quran.com")
+
+  @@unique([surahNumber, ayahNumber, wordPosition, language])
+  @@index([surahNumber, ayahNumber])
+  @@index([language])
+  @@map("word_translations")
+}
+
 // ============================================================================
 // HADITH - Sunnah.com integration
 // ============================================================================
@@ -414,8 +430,9 @@ model Hadith {
   contentHash      String? @map("content_hash")
   chapterArabic    String? @map("chapter_arabic")
   chapterEnglish   String? @map("chapter_english")
-  isChainVariation Boolean @default(false) @map("is_chain_variation") // True for hadiths that are only chain variations (no matn)
-  source           String?                                             // Data provenance: "sunnah.com", "hadithunlocked.com"
+  isChainVariation    Boolean @default(false) @map("is_chain_variation") // True for hadiths that are only chain variations (no matn)
+  source              String?                                             // Data provenance: "sunnah.com", "hadithunlocked.com"
+  numberInCollection  String? @map("number_in_collection") // Display number on source site (e.g. "6204a-2" for hadithunlocked.com)
 
   // Isnad/Matn separation (from hadithunlocked.com)
   isnad     String? @db.Text // Chain of narrators (Arabic, with tashkeel)

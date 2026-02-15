@@ -11,7 +11,7 @@ import {
   type ResolvedSource,
 } from "../../graph/search";
 import { normalizeArabicText } from "../../embeddings";
-import { generatePageReferenceUrl } from "../../utils/source-urls";
+import { generatePageReferenceUrl, generateHadithSourceUrl } from "../../utils/source-urls";
 import { calculateRRFScore, getMatchType } from "./fusion";
 import { getSearchStrategy } from "./query-utils";
 import { RRF_K, SEMANTIC_WEIGHT, KEYWORD_WEIGHT } from "./config";
@@ -362,4 +362,45 @@ export async function buildDebugStats(
       ...(timing.graph > 0 && { graph: timing.graph }),
     },
   };
+}
+
+/**
+ * Resolve numberInCollection for hadithunlocked hadiths and fix their sourceUrl.
+ * Hadiths from hadithunlocked.com store hId as hadithNumber but need `num` (numberInCollection)
+ * for correct deep links.
+ */
+const HADITHUNLOCKED_SLUGS = new Set([
+  "mustadrak", "ibn-hibban", "mujam-kabir", "sunan-kubra-bayhaqi",
+  "sunan-kubra-nasai", "suyuti", "ahmad-zuhd",
+]);
+
+export async function resolveHadithSourceUrls(hadiths: HadithResult[]): Promise<HadithResult[]> {
+  // Find hadithunlocked hadiths that need numberInCollection lookup
+  const needsLookup = hadiths.filter(h => HADITHUNLOCKED_SLUGS.has(h.collectionSlug));
+  if (needsLookup.length === 0) return hadiths;
+
+  // Batch lookup numberInCollection from DB
+  const lookupKeys = needsLookup.map(h => ({ bookId: h.bookId, hadithNumber: h.hadithNumber }));
+
+  const rows = await prisma.hadith.findMany({
+    where: {
+      OR: lookupKeys.map(k => ({ bookId: k.bookId, hadithNumber: k.hadithNumber })),
+    },
+    select: { bookId: true, hadithNumber: true, numberInCollection: true },
+  });
+
+  const numMap = new Map<string, string | null>();
+  for (const row of rows) {
+    numMap.set(`${row.bookId}-${row.hadithNumber}`, row.numberInCollection);
+  }
+
+  return hadiths.map(h => {
+    if (!HADITHUNLOCKED_SLUGS.has(h.collectionSlug)) return h;
+    const numInCol = numMap.get(`${h.bookId}-${h.hadithNumber}`);
+    return {
+      ...h,
+      numberInCollection: numInCol ?? undefined,
+      sourceUrl: generateHadithSourceUrl(h.collectionSlug, h.hadithNumber, h.bookNumber, numInCol),
+    };
+  });
 }

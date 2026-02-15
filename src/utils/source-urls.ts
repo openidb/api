@@ -14,7 +14,9 @@ export const SOURCES = {
     { name: "spa5k/tafsir_api", url: "https://github.com/spa5k/tafsir_api", type: "api" },
     { name: "quran-tafseer.com", url: "http://api.quran-tafseer.com", type: "api" },
   ],
+  qul: [{ name: "QUL (Tarteel AI)", url: "https://qul.tarteel.ai", type: "api" }],
   quranTranslation: [{ name: "fawazahmed0/quran-api", url: "https://github.com/fawazahmed0/quran-api", type: "api" }],
+  wordTranslation: [{ name: "Quran.com API", url: "https://quran.com", type: "api" }],
   quranAudio: [
     { name: "EveryAyah", url: "https://everyayah.com", type: "cdn" },
     { name: "Al Quran Cloud CDN", url: "https://cdn.islamic.network", type: "cdn" },
@@ -26,6 +28,17 @@ export const SOURCES = {
 
 // Collections that use /collection/book/hadith format instead of /collection:hadith
 const BOOK_PATH_COLLECTIONS = new Set(["malik", "bulugh"]);
+
+// Slug → hadithunlocked.com alias mapping (reverse of import script's ALIAS_TO_SLUG)
+const SLUG_TO_HADITHUNLOCKED_ALIAS: Record<string, string> = {
+  mustadrak: "hakim",
+  "ibn-hibban": "ibnhibban",
+  "mujam-kabir": "tabarani",
+  "sunan-kubra-bayhaqi": "bayhaqi",
+  "sunan-kubra-nasai": "nasai-kubra",
+  suyuti: "suyuti",
+  "ahmad-zuhd": "ahmad-zuhd",
+};
 
 /**
  * Generate the correct sunnah.com URL for a hadith.
@@ -41,6 +54,40 @@ export function generateSunnahUrl(
     return `https://sunnah.com/${collectionSlug}/${bookNumber}/${cleanHadithNumber}`;
   }
   return `https://sunnah.com/${collectionSlug}:${cleanHadithNumber}`;
+}
+
+/**
+ * Generate the correct hadithunlocked.com URL for a hadith.
+ * Uses numberInCollection (the display number like "6204a-2") when available,
+ * falls back to collection page if not.
+ */
+export function generateHadithUnlockedUrl(
+  collectionSlug: string,
+  numberInCollection?: string | null
+): string {
+  const alias = SLUG_TO_HADITHUNLOCKED_ALIAS[collectionSlug];
+  if (!alias) return "";
+  if (numberInCollection) {
+    return `https://hadithunlocked.com/${alias}:${numberInCollection}`;
+  }
+  // Fallback: link to collection page (no specific hadith)
+  return `https://hadithunlocked.com/${alias}`;
+}
+
+/**
+ * Generate the correct source URL for any hadith, picking the right site based on collection slug.
+ * For hadithunlocked collections, numberInCollection is required for deep links.
+ */
+export function generateHadithSourceUrl(
+  collectionSlug: string,
+  hadithNumber: string,
+  bookNumber: number,
+  numberInCollection?: string | null
+): string {
+  if (collectionSlug in SLUG_TO_HADITHUNLOCKED_ALIAS) {
+    return generateHadithUnlockedUrl(collectionSlug, numberInCollection);
+  }
+  return generateSunnahUrl(collectionSlug, hadithNumber, bookNumber);
 }
 
 /**
@@ -66,12 +113,17 @@ export function generatePageReferenceUrl(bookId: string, pageNumber: number): st
 
 /**
  * Generate a source URL for a tafsir entry.
- * Accepts editionId (e.g. "ar-tafsir-ibn-kathir") or legacy source slug.
+ * Accepts editionId (e.g. "ar-tafsir-ibn-kathir", "qul-14") or legacy source slug.
  */
 export function generateTafsirSourceUrl(
   editionIdOrSource: string,
   surahNumber: number
 ): string {
+  // QUL tafsir editions
+  if (editionIdOrSource.startsWith("qul-")) {
+    const resourceId = parseInt(editionIdOrSource.slice(4), 10);
+    return generateQulTafsirSourceUrl(resourceId, surahNumber);
+  }
   // Legacy source values
   if (editionIdOrSource === "jalalayn") {
     return `https://cdn.jsdelivr.net/gh/spa5k/tafsir_api@main/tafsir/ar-jalalayn/${surahNumber}.json`;
@@ -87,5 +139,16 @@ export function generateTafsirSourceUrl(
  * Generate a source URL for a Quran translation edition.
  */
 export function generateTranslationSourceUrl(editionId: string): string {
+  if (editionId.startsWith("qul-")) {
+    const resourceId = editionId.slice(4);
+    return `https://qul.tarteel.ai/api/v1/translations/${resourceId}/by_range?from=1:1&to=1:7`;
+  }
   return `https://cdn.jsdelivr.net/gh/fawazahmed0/quran-api@1/editions/${editionId}.json`;
+}
+
+/**
+ * Generate a source URL for a QUL tafsir edition.
+ */
+export function generateQulTafsirSourceUrl(resourceId: number, surahNumber: number): string {
+  return `https://qul.tarteel.ai/api/v1/tafsirs/${resourceId}/by_range?from=${surahNumber}:1&to=${surahNumber}:7`;
 }

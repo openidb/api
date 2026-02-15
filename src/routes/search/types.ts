@@ -63,10 +63,11 @@ export interface HadithResult {
   bookNameArabic: string;
   bookNameEnglish: string;
   hadithNumber: string;
+  numberInCollection?: string | null;
   text: string;
   chapterArabic: string | null;
   chapterEnglish: string | null;
-  sunnahComUrl: string;
+  sourceUrl: string;
   translation?: string;
 }
 

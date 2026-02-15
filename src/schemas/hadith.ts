@@ -61,7 +61,7 @@ export const HadithSchema = z.object({
   contentHash: z.string().nullable(),
   chapterArabic: z.string().nullable(),
   chapterEnglish: z.string().nullable(),
-  sunnahComUrl: z.string().nullable().optional(),
+  sourceUrl: z.string().nullable().optional(),
   source: z.string().nullable().optional(),
   // Isnad/matn separation (hadithunlocked.com)
   isnad: z.string().nullable().optional(),
@@ -106,7 +106,7 @@ export const HadithDetailResponse = z.object({
     contentHash: z.string().nullable(),
     chapterArabic: z.string().nullable(),
     chapterEnglish: z.string().nullable(),
-    sunnahComUrl: z.string().nullable().optional(),
+    sourceUrl: z.string().nullable().optional(),
     source: z.string().nullable().optional(),
     // Isnad/matn separation (hadithunlocked.com)
     isnad: z.string().nullable().optional(),

@@ -20,7 +20,7 @@ import {
   keywordSearchAyahsES,
   keywordSearchHadithsES,
 } from "../../search/elasticsearch-search";
-import { generatePageReferenceUrl, generateQuranUrl } from "../../utils/source-urls";
+import { generatePageReferenceUrl, generateQuranUrl, generateHadithSourceUrl } from "../../utils/source-urls";
 import { EXCLUDED_BOOK_IDS, AUTHOR_SCORE_THRESHOLD, DEFAULT_AYAH_SIMILARITY_CUTOFF, FETCH_LIMIT_CAP, AYAH_PRE_RERANK_CAP, HADITH_PRE_RERANK_CAP } from "./config";
 import { shouldSkipSemanticSearch, getDynamicSimilarityThreshold } from "./query-utils";
 import { mergeWithRRFGeneric } from "./fusion";
@@ -37,6 +37,11 @@ import type {
   HadithResult,
   HadithRankedResult,
 } from "./types";
+
+/**
+ * Module-level cache for hadith book ID lookups (immutable data)
+ */
+const hadithBookIdCache = new Map<string, number>();
 
 /**
  * Get embedding function and collection names based on embedding model
@@ -370,43 +375,45 @@ export async function searchHadithsSemantic(
       textPlain: string;
       chapterArabic: string | null;
       chapterEnglish: string | null;
-      sunnahUrl?: string;
-      sunnahComUrl?: string;
       bookId?: number;
     });
 
-    const bookIdMap = new Map<string, number>();
     const missingBookIds = payloads.filter((p) => !p.bookId);
 
     if (missingBookIds.length > 0) {
       const uniqueKeys = new Set(missingBookIds.map((p) => `${p.collectionSlug}|${p.bookNumber}`));
-      const lookupPairs = Array.from(uniqueKeys).map((key) => {
-        const [slug, num] = key.split("|");
-        return { slug, bookNumber: parseInt(num, 10) };
-      });
+      // Filter to only keys not already in module-level cache
+      const uncachedKeys = Array.from(uniqueKeys).filter((k) => !hadithBookIdCache.has(k));
 
-      const books = await prisma.hadithBook.findMany({
-        where: {
-          OR: lookupPairs.map((p) => ({
-            collection: { slug: p.slug },
-            bookNumber: p.bookNumber,
-          })),
-        },
-        select: {
-          id: true,
-          bookNumber: true,
-          collection: { select: { slug: true } },
-        },
-      });
+      if (uncachedKeys.length > 0) {
+        const lookupPairs = uncachedKeys.map((key) => {
+          const [slug, num] = key.split("|");
+          return { slug, bookNumber: parseInt(num, 10) };
+        });
 
-      for (const book of books) {
-        bookIdMap.set(`${book.collection.slug}|${book.bookNumber}`, book.id);
+        const books = await prisma.hadithBook.findMany({
+          where: {
+            OR: lookupPairs.map((p) => ({
+              collection: { slug: p.slug },
+              bookNumber: p.bookNumber,
+            })),
+          },
+          select: {
+            id: true,
+            bookNumber: true,
+            collection: { select: { slug: true } },
+          },
+        });
+
+        for (const book of books) {
+          hadithBookIdCache.set(`${book.collection.slug}|${book.bookNumber}`, book.id);
+        }
       }
     }
 
     return searchResults.map((result, index) => {
       const payload = payloads[index];
-      const bookId = payload.bookId || bookIdMap.get(`${payload.collectionSlug}|${payload.bookNumber}`) || 0;
+      const bookId = payload.bookId || hadithBookIdCache.get(`${payload.collectionSlug}|${payload.bookNumber}`) || 0;
 
       return {
         score: result.score,
@@ -422,7 +429,7 @@ export async function searchHadithsSemantic(
         text: payload.text,
         chapterArabic: payload.chapterArabic,
         chapterEnglish: payload.chapterEnglish,
-        sunnahComUrl: (payload.sunnahUrl || payload.sunnahComUrl || '').replace(/(\d)[A-Z]+$/, '$1'),
+        sourceUrl: generateHadithSourceUrl(payload.collectionSlug, payload.hadithNumber, payload.bookNumber),
         semanticRank: index + 1,
       };
     });

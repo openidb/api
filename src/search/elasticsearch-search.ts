@@ -12,12 +12,11 @@ import {
   ES_AYAHS_INDEX,
 } from "./elasticsearch";
 import { normalizeArabicText } from "../embeddings";
-import { generateSunnahUrl, generateQuranUrl, generatePageReferenceUrl } from "../utils/source-urls";
+import { generateQuranUrl, generatePageReferenceUrl, generateHadithSourceUrl } from "../utils/source-urls";
 import { isArabicQuery, prepareSearchTerms, parseSearchQuery } from "../routes/search/query-utils";
 import type { QueryDslQueryContainer, SearchHit } from "@elastic/elasticsearch/lib/api/types";
 import type { RankedResult, HadithRankedResult, AyahRankedResult, ParsedQuery } from "../routes/search/types";
 
-export { generateSunnahUrl };
 export type { RankedResult, HadithRankedResult, AyahRankedResult };
 
 /**
@@ -450,7 +449,7 @@ function mapHadithHitToResult(
     text: source.text_arabic,
     chapterArabic: source.chapter_arabic,
     chapterEnglish: source.chapter_english,
-    sunnahComUrl: generateSunnahUrl(source.collection_slug, source.hadith_number, source.book_number),
+    sourceUrl: generateHadithSourceUrl(source.collection_slug, source.hadith_number, source.book_number),
     keywordRank: index + 1,
     tsRank: hit._score || 0,
     bm25Score: hit._score || 0,

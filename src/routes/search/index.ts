@@ -5,7 +5,7 @@ import { searchAuthors } from "./engines";
 import { executeStandardSearch } from "./standard-search";
 import { executeRefineSearch } from "./refine-search";
 import { fetchAndMergeTranslations } from "./translations";
-import { startGraphSearch, resolveGraphContext, fetchBookDetails, formatSearchResults, buildDebugStats } from "./response";
+import { startGraphSearch, resolveGraphContext, fetchBookDetails, formatSearchResults, buildDebugStats, resolveHadithSourceUrls } from "./response";
 import type { AyahSearchMeta, SearchMode, RerankerType, EmbeddingModel } from "./types";
 import type { SearchParams } from "./params";
 import { ErrorResponse } from "../../schemas/common";
@@ -140,6 +140,9 @@ searchRoutes.openapi(search, async (c) => {
     rankedResults = translated.rankedResults;
     hadiths = translated.hadiths;
     _timing.translations = translationsTimer();
+
+    // Resolve hadithunlocked.com source URLs (needs DB lookup for display numbers)
+    hadiths = await resolveHadithSourceUrls(hadiths);
 
     // Limit final results
     rankedResults = rankedResults.slice(0, params.limit);

@@ -1,6 +1,6 @@
 import { OpenAPIHono, createRoute } from "@hono/zod-openapi";
 import { prisma } from "../db";
-import { generateSunnahUrl, SOURCES } from "../utils/source-urls";
+import { generateHadithSourceUrl, SOURCES } from "../utils/source-urls";
 import { ErrorResponse } from "../schemas/common";
 import {
   CollectionSlugParam, CollectionBookParam, HadithNumberParam,
@@ -85,6 +85,7 @@ const getHadith = createRoute({
 // Extra hadith fields to include in select queries (hadithunlocked.com + legacy metadata)
 const EXTRA_HADITH_FIELDS_SELECT = {
   source: true,
+  numberInCollection: true,
   isnad: true,
   matn: true,
   gradeText: true,
@@ -99,7 +100,7 @@ const EXTRA_HADITH_FIELDS_SELECT = {
   sharhText: true,
 } as const;
 
-// Sunnah.com collection slugs — only these get sunnahComUrl
+// Sunnah.com collection slugs
 const SUNNAH_COM_SLUGS = new Set([
   "bukhari", "muslim", "abudawud", "tirmidhi", "nasai", "ibnmajah",
   "ahmad", "malik", "darimi", "riyadussalihin", "adab", "shamail",
@@ -129,7 +130,7 @@ function formatHadithForList(h: any, slug: string, bookNumber: number) {
     contentHash: h.contentHash,
     chapterArabic: h.chapterArabic,
     chapterEnglish: h.chapterEnglish,
-    sunnahComUrl: isFromSunnah(slug) ? generateSunnahUrl(slug, h.hadithNumber, bookNumber) : null,
+    sourceUrl: generateHadithSourceUrl(slug, h.hadithNumber, bookNumber, h.numberInCollection),
     source: h.source ?? null,
     isnad: h.isnad ?? null,
     matn: h.matn ?? null,
@@ -296,7 +297,7 @@ hadithRoutes.openapi(getHadith, async (c) => {
     hadith: {
       ...hadith,
       categories: hadith.categories as Array<{ id: number; name: string }> | null,
-      sunnahComUrl: isFromSunnah(slug) ? generateSunnahUrl(slug, hadith.hadithNumber, hadith.book.bookNumber) : null,
+      sourceUrl: generateHadithSourceUrl(slug, hadith.hadithNumber, hadith.book.bookNumber, hadith.numberInCollection),
     },
     _sources: getSourcesForSlug(slug),
   }, 200);

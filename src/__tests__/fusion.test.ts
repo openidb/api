@@ -263,7 +263,7 @@ describe("mergeAndDeduplicateHadiths", () => {
       score: 0.85, bookId: 1, collectionSlug: "bukhari", collectionNameArabic: "صحيح البخاري",
       collectionNameEnglish: "Sahih al-Bukhari", bookNumber: 1, bookNameArabic: "بدء الوحي",
       bookNameEnglish: "Revelation", hadithNumber: "1", text: "إنما الأعمال بالنيات",
-      chapterArabic: null, chapterEnglish: null, sunnahComUrl: "/bukhari/1",
+      chapterArabic: null, chapterEnglish: null, sourceUrl: "https://sunnah.com/bukhari:1",
     };
     const results = mergeAndDeduplicateHadiths([
       { results: [hadith], weight: 1.0 },
