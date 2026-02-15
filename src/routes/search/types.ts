@@ -19,6 +19,7 @@ export interface SearchResult {
   urlPageIndex?: string;
   referenceUrl: string;
   contentTranslation?: string | null;
+  contentTranslationModel?: string | null;
   book: {
     id: string;
     titleArabic: string;
@@ -44,6 +45,9 @@ export interface AyahResult {
   surahNameEnglish: string;
   text: string;
   translation?: string;
+  translationEditionId?: string;
+  translationName?: string;
+  translationSource?: string;
   juzNumber: number;
   pageNumber: number;
   quranComUrl: string;
@@ -69,6 +73,7 @@ export interface HadithResult {
   chapterEnglish: string | null;
   sourceUrl: string;
   translation?: string;
+  translationSource?: string;
 }
 
 export interface AuthorResult {
@@ -96,6 +101,7 @@ export interface RankedResult {
   urlPageIndex?: string;
   referenceUrl?: string;
   contentTranslation?: string | null;
+  contentTranslationModel?: string | null;
 }
 
 export interface HadithRankedResult extends HadithResult {

@@ -212,6 +212,7 @@ export function formatSearchResults(
       urlPageIndex: result.urlPageIndex,
       referenceUrl: result.referenceUrl || generatePageReferenceUrl(result.bookId, result.pageNumber),
       contentTranslation: result.contentTranslation,
+      contentTranslationModel: result.contentTranslationModel,
       book,
     };
   });

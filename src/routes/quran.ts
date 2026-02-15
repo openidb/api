@@ -315,7 +315,7 @@ quranRoutes.openapi(listTafsirs, async (c) => {
     setCache(cacheKey, tafsirs);
   }
 
-  return c.json({ tafsirs, count: tafsirs.length }, 200);
+  return c.json({ tafsirs, count: tafsirs.length, _sources: [...SOURCES.tafsir, ...SOURCES.qul] }, 200);
 });
 
 quranRoutes.openapi(getTafsir, async (c) => {
@@ -357,7 +357,7 @@ quranRoutes.openapi(listTranslations, async (c) => {
     setCache(cacheKey, translations);
   }
 
-  return c.json({ translations, count: translations.length }, 200);
+  return c.json({ translations, count: translations.length, _sources: [...SOURCES.quranTranslation, ...SOURCES.qul] }, 200);
 });
 
 quranRoutes.openapi(getTranslation, async (c) => {
@@ -429,7 +429,7 @@ quranRoutes.openapi(listReciters, async (c) => {
   });
 
   c.header("Cache-Control", "public, max-age=3600");
-  return c.json({ reciters, count: reciters.length }, 200);
+  return c.json({ reciters, count: reciters.length, _sources: [...SOURCES.quranAudio] }, 200);
 });
 
 quranRoutes.openapi(getAudio, async (c) => {

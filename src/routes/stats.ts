@@ -1,6 +1,7 @@
 import { OpenAPIHono, createRoute } from "@hono/zod-openapi";
 import { prisma } from "../db";
 import { StatsResponse } from "../schemas/stats";
+import { SOURCES } from "../utils/source-urls";
 
 const getStats = createRoute({
   method: "get",
@@ -27,5 +28,8 @@ statsRoutes.openapi(getStats, async (c) => {
   ]);
 
   c.header("Cache-Control", "public, max-age=3600");
-  return c.json({ bookCount, authorCount, hadithCount, categoryCount }, 200);
+  return c.json({
+    bookCount, authorCount, hadithCount, categoryCount,
+    _sources: [...SOURCES.turath, ...SOURCES.quranCloud, ...SOURCES.sunnah, ...SOURCES.hadithUnlocked],
+  }, 200);
 });

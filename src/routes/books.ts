@@ -181,6 +181,7 @@ const PdfUrlResponse = z.object({
   url: z.string(),
   type: z.enum(["rustfs", "external"]),
   expiresIn: z.number().optional(),
+  _sources: z.array(z.object({ name: z.string(), url: z.string(), type: z.string() })),
 }).openapi("PdfUrl");
 
 const getPagePdf = createRoute({
@@ -470,10 +471,16 @@ booksRoutes.openapi(translatePage, async (c) => {
   // Check cache
   const existing = await prisma.pageTranslation.findUnique({
     where: { pageId_language: { pageId: page.id, language: lang } },
-    select: { paragraphs: true, contentHash: true },
+    select: { paragraphs: true, contentHash: true, model: true },
   });
   if (existing) {
-    return c.json({ paragraphs: existing.paragraphs as any, contentHash: existing.contentHash, cached: true }, 200);
+    const cachedModel = MODEL_MAP[existing.model ?? ""] ?? existing.model ?? "unknown";
+    return c.json({
+      paragraphs: existing.paragraphs as any,
+      contentHash: existing.contentHash,
+      cached: true,
+      _sources: [{ name: `LLM Translation (${cachedModel})`, url: "https://openrouter.ai", type: "llm" }],
+    }, 200);
   }
 
   const paragraphs = extractParagraphs(page.contentHtml);
@@ -540,7 +547,12 @@ Respond with ONLY a valid JSON array, no other text. Example format:
     data: { pageId: page.id, language: lang, model: modelKey, paragraphs: translations, contentHash },
   });
 
-  return c.json({ paragraphs: translations, contentHash, cached: false }, 200);
+  return c.json({
+    paragraphs: translations,
+    contentHash,
+    cached: false,
+    _sources: [{ name: `LLM Translation (${model})`, url: "https://openrouter.ai", type: "llm" }],
+  }, 200);
 });
 
 booksRoutes.openapi(getPage, async (c) => {
@@ -636,12 +648,12 @@ booksRoutes.openapi(getPagePdf, async (c) => {
   }
 
   if (storage.type === "external") {
-    return c.json({ url: storage.url, type: "external" as const }, 200);
+    return c.json({ url: storage.url, type: "external" as const, _sources: [...SOURCES.turath] }, 200);
   }
 
   const expiresIn = 3600;
   const command = new GetObjectCommand({ Bucket: BUCKET_NAME, Key: storage.key });
   const url = await getSignedUrl(s3, command, { expiresIn });
 
-  return c.json({ url, type: "rustfs" as const, expiresIn }, 200);
+  return c.json({ url, type: "rustfs" as const, expiresIn, _sources: [...SOURCES.turath] }, 200);
 });

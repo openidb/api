@@ -4,6 +4,7 @@ import {
   DEFAULT_SIMILARITY_CUTOFF, REFINE_SIMILARITY_CUTOFF,
   DEFAULT_BOOK_LIMIT, MAX_BOOK_LIMIT, MIN_BOOK_LIMIT,
 } from "../routes/search/config";
+import { SourceSchema } from "./common";
 
 export const SearchQuery = z.object({
   q: z.string().min(1).max(MAX_QUERY_LENGTH).openapi({ example: "الصلاة", description: "Search query" }),
@@ -48,4 +49,5 @@ export const SearchResponse = z.object({
   graphContext: z.any().optional(),
   refined: z.boolean().optional(),
   expandedQueries: z.array(z.any()).optional(),
+  _sources: z.array(SourceSchema).optional(),
 }).openapi("SearchResponse");

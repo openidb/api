@@ -153,4 +153,5 @@ export const TranslateResponse = z.object({
   })),
   contentHash: z.string().nullable().optional(),
   cached: z.boolean().optional(),
+  _sources: z.array(SourceSchema).optional(),
 }).openapi("TranslateResponse");

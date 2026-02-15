@@ -110,6 +110,7 @@ export const TafsirEditionSchema = z.object({
 export const TafsirListResponse = z.object({
   tafsirs: z.array(TafsirEditionSchema),
   count: z.number(),
+  _sources: z.array(SourceSchema),
 }).openapi("TafsirEditionList");
 
 export const TafsirEntry = z.object({
@@ -140,6 +141,7 @@ export const TranslationEditionSchema = z.object({
 export const TranslationListResponse = z.object({
   translations: z.array(TranslationEditionSchema),
   count: z.number(),
+  _sources: z.array(SourceSchema),
 }).openapi("TranslationEditionList");
 
 export const TranslationEntry = z.object({
@@ -205,6 +207,7 @@ export const ReciterListQuery = z.object({
 export const ReciterListResponse = z.object({
   reciters: z.array(ReciterSchema),
   count: z.number(),
+  _sources: z.array(SourceSchema),
 }).openapi("ReciterList");
 
 export const AudioPathParam = z.object({

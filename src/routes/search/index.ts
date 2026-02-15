@@ -12,6 +12,7 @@ import { ErrorResponse } from "../../schemas/common";
 import { SearchQuery, SearchResponse } from "../../schemas/search";
 import { logSearchEvent } from "../../analytics/log-search";
 import { clickRoutes } from "./click";
+import { SOURCES } from "../../utils/source-urls";
 
 const search = createRoute({
   method: "get",
@@ -200,6 +201,12 @@ searchRoutes.openapi(search, async (c) => {
       );
     }
 
+    const _sources = [
+      ...(params.includeBooks ? SOURCES.turath : []),
+      ...(params.includeQuran ? SOURCES.quranCloud : []),
+      ...(params.includeHadith ? [...SOURCES.sunnah, ...SOURCES.hadithUnlocked] : []),
+    ];
+
     return c.json({
       query: params.query,
       mode: params.mode,
@@ -214,6 +221,7 @@ searchRoutes.openapi(search, async (c) => {
         refined: true,
         expandedQueries,
       }),
+      _sources,
     }, 200);
   } catch (error) {
     console.error("Search error:", error);
