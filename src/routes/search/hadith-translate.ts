@@ -10,7 +10,7 @@ const RequestSchema = z.object({
         bookId: z.number(),
         hadithNumber: z.string(),
         collectionSlug: z.string(),
-        text: z.string().max(10_000),
+        text: z.string().max(30_000),
       })
     )
     .min(1)
@@ -31,7 +31,34 @@ const LANGUAGE_NAMES: Record<string, string> = {
   ko: "Korean",
   it: "Italian",
   bn: "Bengali",
+  de: "German",
+  fa: "Persian",
+  ha: "Hausa",
+  hi: "Hindi",
+  ku: "Kurdish",
+  ms: "Malay",
+  nl: "Dutch",
+  pa: "Punjabi",
+  ps: "Pashto",
+  so: "Somali",
+  sw: "Swahili",
+  ta: "Tamil",
+  tr: "Turkish",
+  uz: "Uzbek",
+  yo: "Yoruba",
 };
+
+// Languages that use non-Latin scripts — we can detect if the LLM accidentally returned English
+const NON_LATIN_LANGS = new Set(["ru", "zh", "ja", "ko", "bn", "hi", "ur", "fa", "pa", "ps", "ta"]);
+
+/** Returns true if the text is mostly Latin letters but the target language uses a non-Latin script. */
+function isWrongLanguage(text: string, targetLang: string): boolean {
+  if (!NON_LATIN_LANGS.has(targetLang)) return false;
+  const letters = [...text].filter((ch) => /\p{L}/u.test(ch));
+  if (letters.length < 10) return false;
+  const latinRatio = letters.filter((ch) => /[a-zA-Z]/.test(ch)).length / letters.length;
+  return latinRatio > 0.7;
+}
 
 export const hadithTranslateRoutes = new Hono();
 
@@ -77,12 +104,17 @@ hadithTranslateRoutes.post("/translate-hadiths", async (c) => {
     const key = `${h.bookId}-${h.hadithNumber}`;
     const hit = cachedMap.get(key);
     if (hit) {
-      translations.push({
-        bookId: h.bookId,
-        hadithNumber: h.hadithNumber,
-        translation: hit.text,
-        source: hit.source || "llm",
-      });
+      // If cached LLM translation is in the wrong language, re-translate instead
+      if (hit.source === "llm" && isWrongLanguage(hit.text, language)) {
+        toTranslate.push(h);
+      } else {
+        translations.push({
+          bookId: h.bookId,
+          hadithNumber: h.hadithNumber,
+          translation: hit.text,
+          source: hit.source || "llm",
+        });
+      }
     } else {
       toTranslate.push(h);
     }
@@ -98,32 +130,25 @@ hadithTranslateRoutes.post("/translate-hadiths", async (c) => {
     .map((h, i) => `[${i}] ${h.text}`)
     .join("\n\n");
 
+  const isEnglish = language === "en";
+
   const prompt = `Translate the following Arabic hadiths to ${languageName}.
-Each hadith is numbered with [N]. Return a JSON array where each element has "index" (the hadith number) and "translation" (the translated text).
-Only translate the text content — do not include the original Arabic or the [N] markers.
-Preserve the meaning, tone, and register of the original text.
+Each hadith is numbered with [N]. Return a JSON array where each element has "index" (the hadith number) and "translation" (the ${languageName} text).
+Only output the translation — do not include the original Arabic or the [N] markers.
 
-IMPORTANT — Hadith Translation Guidelines:
-- If the hadith contains an isnad (chain of narrators), translate it faithfully. Keep narrator names in their standard transliterated forms (e.g. Abu Hurayrah, Ibn Abbas, Aisha).
-- Preserve the distinction between the isnad (chain) and the matn (body text) in your translation.
-- For the Prophet's words (matn), use clear, dignified English that preserves the original meaning.
+Guidelines:
+- Translate the full hadith faithfully, preserving isnad (chain of narrators) and matn (body text).
+- Keep narrator names in standard transliterated forms (e.g. Abu Hurayrah, Ibn Abbas, Aisha).${isEnglish ? `
 - "حدثنا" / "أخبرنا" → "narrated to us" / "informed us"
-- "عن" → "from" or "on the authority of" (in isnad context)
-
-IMPORTANT — Preserve Islamic terminology in their conventional transliterated forms:
-- "الله" → "Allah" (not "God")
-- "محمد" / "النبي" → "the Prophet Muhammad" or "the Prophet ﷺ"
-- "صلى الله عليه وسلم" → "peace be upon him" or "ﷺ"
-- "رضي الله عنه/عنها" → "may Allah be pleased with him/her"
-- Surah names: standard transliteration (al-Baqarah, not "The Cow")
-- Keep terms like: Salah, Zakat, Hajj, Iman, Taqwa, Sunnah, Fiqh, Tafsir, Jannah, Jahannam, Wudu, etc.
-- "الرسول" → "the Messenger of Allah"
-- "الصحابة" → "the Companions"
+- "عن" → "from" or "on the authority of" (in isnad context)` : `
+- Use the conventional ${languageName} hadith narration terms for "حدثنا", "أخبرنا", "عن".`}
+- Keep "Allah" as-is. Keep Islamic terms (Salah, Zakat, Hajj, Sunnah, Jannah, etc.) in their transliterated or conventional ${languageName} forms.
+- Use ﷺ or the conventional ${languageName} honorific for "صلى الله عليه وسلم".
 
 Arabic hadiths:
 ${numberedHadiths}
 
-Respond with ONLY a valid JSON array, no other text. Example:
+Translate to ${languageName}. Respond with ONLY a valid JSON array. Example:
 [{"index": 0, "translation": "..."}, {"index": 1, "translation": "..."}]`;
 
   const model = "google/gemini-2.0-flash-001";
@@ -133,7 +158,7 @@ Respond with ONLY a valid JSON array, no other text. Example:
     model,
     messages: [{ role: "user", content: prompt }],
     temperature: 0.3,
-    timeoutMs: 30_000,
+    timeoutMs: 60_000,
   });
 
   if (!result) {
@@ -160,7 +185,7 @@ Respond with ONLY a valid JSON array, no other text. Example:
       ) {
         llmTranslations.push({
           index: item.index,
-          translation: item.translation.slice(0, 10_000),
+          translation: item.translation.slice(0, 30_000),
         });
       }
     }
@@ -173,6 +198,19 @@ Respond with ONLY a valid JSON array, no other text. Example:
   for (const t of llmTranslations) {
     const hadith = toTranslate[t.index];
     if (!hadith) continue;
+
+    // Validate the translation is in the target language (for non-Latin-script languages)
+    if (isWrongLanguage(t.translation, language)) {
+      console.warn(`[hadith-translate] Wrong language detected for ${hadith.bookId}:${hadith.hadithNumber} (expected ${language}), skipping cache`);
+      // Still return it to the user (better than nothing) but don't cache it
+      translations.push({
+        bookId: hadith.bookId,
+        hadithNumber: hadith.hadithNumber,
+        translation: t.translation,
+        source: "llm",
+      });
+      continue;
+    }
 
     try {
       // Only insert if no translation exists — never overwrite human translations
@@ -218,7 +256,7 @@ Respond with ONLY a valid JSON array, no other text. Example:
       });
     } catch (err) {
       console.error(`[hadith-translate] Failed to persist translation for ${hadith.bookId}:${hadith.hadithNumber}:`, err);
-      continue;
+      // Still return the translation even if caching failed
     }
 
     translations.push({

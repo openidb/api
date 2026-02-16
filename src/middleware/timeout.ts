@@ -3,9 +3,16 @@ import type { MiddlewareHandler } from "hono";
 /**
  * Request timeout middleware.
  * Aborts the request if it exceeds the specified timeout.
+ * First-wins: if a more specific route already set a timeout, the general one is skipped.
  */
 export function timeout(ms: number): MiddlewareHandler {
   return async (c, next) => {
+    // Skip if a more specific timeout middleware already claimed this request
+    if (c.get("_timeout_ms")) {
+      return next();
+    }
+    c.set("_timeout_ms", ms);
+
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), ms);
 

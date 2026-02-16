@@ -60,9 +60,10 @@ app.use("/api/transcribe", bodyLimit({ maxSize: 26 * 1024 * 1024 })); // 26MB fo
 app.use("/api/transcribe/*", bodyLimit({ maxSize: 26 * 1024 * 1024 }));
 app.use("/api/*", bodyLimit({ maxSize: 1024 * 1024 })); // 1MB default for JSON
 
-// Request timeout (30s default, 60s for translate)
-app.use("/api/*", timeout(30_000));
+// Request timeout — specific routes first (first-wins), general fallback last
 app.use("/api/books/:id/pages/:page/translate", timeout(60_000));
+app.use("/api/search/translate-hadiths", timeout(90_000));
+app.use("/api/*", timeout(30_000));
 
 // Request logging
 app.use("/api/*", requestLogger);
@@ -81,7 +82,6 @@ app.use("/api/books/:id/pages/:page/translate", internalAuth);
 app.use("/api/books/:id/pages/:page/translate", expensiveRateLimit);
 app.use("/api/search/translate-hadiths", internalAuth);
 app.use("/api/search/translate-hadiths", expensiveRateLimit);
-app.use("/api/search/translate-hadiths", timeout(60_000));
 
 app.route("/api/search", searchRoutes);
 app.route("/api/quran", quranRoutes);

@@ -35,7 +35,7 @@ Built with Hono, PostgreSQL, Qdrant, Elasticsearch, and Neo4j.
   - **[sunnah.com](https://sunnah.com/)** — 17 collections (49,618 hadiths): Bukhari, Muslim, Abu Dawud, Tirmidhi, Nasa'i, Ibn Majah, Ahmad, Malik, Darimi, Riyad as-Salihin, Al-Adab Al-Mufrad, Ash-Shama'il, Mishkat al-Masabih, Bulugh al-Maram, Nawawi's 40, 40 Qudsi, Hisn al-Muslim
   - **[hadithunlocked.com](https://hadithunlocked.com/)** — 7 collections (117,346 hadiths) with full tashkeel, isnad/matn separation, grading, and English translations: Mustadrak al-Hakim, Sahih Ibn Hibban, Al-Mu'jam al-Kabir, Sunan al-Kubra (Bayhaqi), Sunan al-Kubra (Nasa'i), Jam' al-Jawami' (Suyuti), Al-Zuhd (Ahmad)
 - **Books** — Classical Arabic texts from [Turath.io](https://turath.io/) — full-text HTML pages, volume/printed page numbers, table of contents, scanned PDFs, authors, categories, publishers, and editors
-- **Dictionary** — 43 Arabic dictionaries (~115K entries, 155K+ sub-entries) including Lisan al-Arab, Taj al-Arus, al-Qamus, al-Wasit, and more — with root derivation (~457K word-root mappings), vocalized headword matching, and 7-tier lookup fallback
+- **Dictionary** — 43 Arabic dictionaries (~187K entries, ~347K sub-entries) including Lisan al-Arab, Taj al-Arus, al-Qamus, al-Wasit, and more — with root derivation (~457K word-root mappings), vocalized headword matching, and 7-tier lookup fallback
 
 ## API
 
@@ -330,7 +330,7 @@ bun run pipelines/knowledge-graph/seed-neo4j.ts               # Seed Neo4j knowl
 
 ### Books & Dictionaries
 
-- **[Turath.io](https://turath.io/)** — 8,500+ classical Arabic texts and 43 Arabic dictionaries (same corpus as [Shamela.ws](https://shamela.ws/))
+- **[Turath.io](https://turath.io/)** — 8,500+ classical Arabic texts and 43 Arabic dictionaries (~187K entries, ~347K sub-entries) (same corpus as [Shamela.ws](https://shamela.ws/))
 - **[Arramooz](https://github.com/linuxscout/arramooz)** — Arabic morphological database for root derivation
 - **KhorsiCorpus** — Taj al-Arus word-root derivatives for morphological pattern generation
 
