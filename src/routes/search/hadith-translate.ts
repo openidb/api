@@ -151,7 +151,7 @@ ${numberedHadiths}
 Translate to ${languageName}. Respond with ONLY a valid JSON array. Example:
 [{"index": 0, "translation": "..."}, {"index": 1, "translation": "..."}]`;
 
-  const model = "google/gemini-2.0-flash-001";
+  const model = "google/gemini-3-flash-preview";
   const modelKey = "gemini-flash";
 
   const result = await callOpenRouter({

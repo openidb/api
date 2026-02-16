@@ -47,14 +47,15 @@ export async function executeRefineSearch(params: SearchParams): Promise<RefineS
     refineOriginalWeight, refineExpandedWeight,
     refineBookPerQuery, refineAyahPerQuery, refineHadithPerQuery,
     refineBookRerank, refineAyahRerank, refineHadithRerank,
-    queryExpansionModel, similarityCutoff, embeddingModel,
+    queryExpansionModel, similarityCutoff, embeddingModel, hadithCollections,
   } = params;
 
+  const collectionSlugsOpt = hadithCollections.length > 0 ? hadithCollections : undefined;
   const fuzzyOptions = { fuzzyFallback: fuzzyEnabled };
   const searchStrategy = getSearchStrategy(query);
   const shouldSkipKeyword = searchStrategy === 'semantic_only';
   const refineSearchOptions = { reranker, similarityCutoff: refineSimilarityCutoff };
-  const refineHybridOptions = { ...refineSearchOptions, fuzzyFallback: fuzzyEnabled };
+  const refineHybridOptions = { ...refineSearchOptions, fuzzyFallback: fuzzyEnabled, collectionSlugs: collectionSlugsOpt };
   const bookMetadataCache = new Map<string, { id: string; titleArabic: string; author: { nameArabic: string } }>();
 
   const generateEmbeddingFn = embeddingModel === "jina"
@@ -115,7 +116,7 @@ export async function executeRefineSearch(params: SearchParams): Promise<RefineS
         ? (await searchAyahsSemantic(q, refineAyahPerQuery, refineSimilarityCutoff, qEmbedding, embeddingModel).catch(err => { console.error("[RefineSearch] ayah search error:", err.message); return { results: [], meta: defaultMeta }; })).results
         : [];
       hadithResults = includeHadith
-        ? await searchHadithsSemantic(q, refineHadithPerQuery, refineSimilarityCutoff, qEmbedding, embeddingModel).catch(err => { console.error("[RefineSearch] search error:", err.message); return []; })
+        ? await searchHadithsSemantic(q, refineHadithPerQuery, refineSimilarityCutoff, qEmbedding, embeddingModel, collectionSlugsOpt).catch(err => { console.error("[RefineSearch] search error:", err.message); return []; })
         : [];
     } else {
       const refineHybridOptionsWithEmbedding = {

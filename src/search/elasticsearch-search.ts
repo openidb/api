@@ -294,10 +294,10 @@ function mapPageHitToResult(
 export async function keywordSearchHadithsES(
   query: string,
   limit: number,
-  options: { fuzzyFallback?: boolean } = {}
+  options: { fuzzyFallback?: boolean; collectionSlugs?: string[] } = {}
 ): Promise<HadithRankedResult[]> {
   const _t0 = Date.now();
-  const { fuzzyFallback = true } = options;
+  const { fuzzyFallback = true, collectionSlugs } = options;
 
   // Skip keyword search for non-Arabic queries
   if (!isArabicQuery(query)) {
@@ -317,11 +317,17 @@ export async function keywordSearchHadithsES(
 
   const baseQuery = buildESQuery(parsed, "text_searchable", null);
 
-  // Wrap with filter to exclude chain variations
+  // Wrap with filter to exclude chain variations (and optionally filter by collection)
+  const filterClauses: QueryDslQueryContainer[] = [];
+  if (collectionSlugs && collectionSlugs.length > 0) {
+    filterClauses.push({ terms: { collection_slug: collectionSlugs } });
+  }
+
   const esQuery: QueryDslQueryContainer = {
     bool: {
       must: [baseQuery],
       must_not: [{ term: { is_chain_variation: true } }],
+      ...(filterClauses.length > 0 && { filter: filterClauses }),
     },
   };
 
@@ -361,7 +367,9 @@ export async function keywordSearchHadithsES(
       const termsOnlyQuery = parsed.terms.join(" ");
       const fuzzyResults = await fuzzyKeywordSearchHadithsES(
         termsOnlyQuery,
-        limit
+        limit,
+        "AUTO",
+        collectionSlugs,
       );
       console.log(
         `[ES HadithKeyword] Fuzzy fallback: ${Date.now() - _tFuzzy}ms (${fuzzyResults.length} results)`
@@ -384,18 +392,25 @@ export async function keywordSearchHadithsES(
 export async function fuzzyKeywordSearchHadithsES(
   query: string,
   limit: number,
-  fuzziness: string = "AUTO"
+  fuzziness: string = "AUTO",
+  collectionSlugs?: string[],
 ): Promise<HadithRankedResult[]> {
   const normalized = normalizeArabicText(query);
   if (normalized.trim().length < 2) return [];
 
   const baseQuery = buildFuzzyESQuery(query, "text_searchable", fuzziness, null);
 
-  // Wrap with filter to exclude chain variations
+  // Wrap with filter to exclude chain variations (and optionally filter by collection)
+  const fuzzyFilterClauses: QueryDslQueryContainer[] = [];
+  if (collectionSlugs && collectionSlugs.length > 0) {
+    fuzzyFilterClauses.push({ terms: { collection_slug: collectionSlugs } });
+  }
+
   const esQuery: QueryDslQueryContainer = {
     bool: {
       must: [baseQuery],
       must_not: [{ term: { is_chain_variation: true } }],
+      ...(fuzzyFilterClauses.length > 0 && { filter: fuzzyFilterClauses }),
     },
   };
 

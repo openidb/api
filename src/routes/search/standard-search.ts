@@ -55,7 +55,7 @@ export async function executeStandardSearch(params: SearchParams): Promise<Stand
   const {
     query, mode, bookId, limit, bookLimit, similarityCutoff,
     includeQuran, includeHadith, includeBooks,
-    fuzzyEnabled, embeddingModel,
+    fuzzyEnabled, embeddingModel, hadithCollections,
   } = params;
 
   const fuzzyOptions = { fuzzyFallback: fuzzyEnabled };
@@ -103,10 +103,12 @@ export async function executeStandardSearch(params: SearchParams): Promise<Stand
         .then(res => { timing.keyword.ayahs = kwAyahsTimer(); return res; })
         .catch(err => { console.error("[SearchEngine] keyword ayahs:", err.message); return [] as AyahRankedResult[]; });
 
+  const hadithSearchOptions = { ...fuzzyOptions, collectionSlugs: hadithCollections.length > 0 ? hadithCollections : undefined };
+
   const kwHadithsTimer = startTimer();
   const keywordHadithsPromise = (shouldSkipKeyword || bookId || !includeHadith)
     ? Promise.resolve([] as HadithRankedResult[])
-    : keywordSearchHadithsES(query, fetchLimit, fuzzyOptions)
+    : keywordSearchHadithsES(query, fetchLimit, hadithSearchOptions)
         .then(res => { timing.keyword.hadiths = kwHadithsTimer(); return res; })
         .catch(err => { console.error("[SearchEngine] keyword hadiths:", err.message); return [] as HadithRankedResult[]; });
 
@@ -131,10 +133,12 @@ export async function executeStandardSearch(params: SearchParams): Promise<Stand
         .then(res => { timing.semantic.ayahs = semAyahsTimer(); return res; })
         .catch(err => { console.error("[SearchEngine] semantic ayahs:", err.message); return { results: [] as AyahRankedResult[], meta: defaultAyahMeta }; });
 
+  const collectionSlugsForSemantic = hadithCollections.length > 0 ? hadithCollections : undefined;
+
   const semHadithsTimer = startTimer();
   const semanticHadithsPromise = (mode === "keyword" || bookId || !includeHadith)
     ? Promise.resolve([] as HadithRankedResult[])
-    : searchHadithsSemantic(query, fetchLimit, similarityCutoff, queryEmbedding, embeddingModel)
+    : searchHadithsSemantic(query, fetchLimit, similarityCutoff, queryEmbedding, embeddingModel, collectionSlugsForSemantic)
         .then(res => { timing.semantic.hadiths = semHadithsTimer(); return res; })
         .catch(err => { console.error("[SearchEngine] semantic hadiths:", err.message); return [] as HadithRankedResult[]; });
 

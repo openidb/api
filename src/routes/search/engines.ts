@@ -338,6 +338,7 @@ export async function searchHadithsSemantic(
   similarityCutoff: number = 0.25,
   precomputedEmbedding?: number[],
   embeddingModel: EmbeddingModel = "gemini",
+  collectionSlugs?: string[],
 ): Promise<HadithRankedResult[]> {
   try {
     if (shouldSkipSemanticSearch(query)) {
@@ -349,12 +350,18 @@ export async function searchHadithsSemantic(
     const effectiveCutoff = getDynamicSimilarityThreshold(query, similarityCutoff);
     const queryEmbedding = precomputedEmbedding ?? await emConfig.generateEmbeddingFn(normalizedQuery);
 
+    const mustFilters: any[] = [];
+    if (collectionSlugs && collectionSlugs.length > 0) {
+      mustFilters.push({ key: "collectionSlug", match: { any: collectionSlugs } });
+    }
+
     const searchResults = await qdrant.search(emConfig.hadithCollection, {
       vector: queryEmbedding,
       limit: limit,
       with_payload: true,
       score_threshold: effectiveCutoff,
       filter: {
+        must: mustFilters.length > 0 ? mustFilters : undefined,
         must_not: [{ key: "isChainVariation", match: { value: true } }],
       },
     });
@@ -445,15 +452,15 @@ export async function searchHadithsSemantic(
 export async function searchHadithsHybrid(
   query: string,
   limit: number = 10,
-  options: { reranker?: RerankerType; preRerankLimit?: number; postRerankLimit?: number; similarityCutoff?: number; fuzzyFallback?: boolean; precomputedEmbedding?: number[]; embeddingModel?: EmbeddingModel } = {}
+  options: { reranker?: RerankerType; preRerankLimit?: number; postRerankLimit?: number; similarityCutoff?: number; fuzzyFallback?: boolean; precomputedEmbedding?: number[]; embeddingModel?: EmbeddingModel; collectionSlugs?: string[] } = {}
 ): Promise<HadithResult[]> {
-  const { reranker = "none", preRerankLimit = 60, postRerankLimit = limit, similarityCutoff = 0.6, fuzzyFallback = true, precomputedEmbedding, embeddingModel = "gemini" } = options;
+  const { reranker = "none", preRerankLimit = 60, postRerankLimit = limit, similarityCutoff = 0.6, fuzzyFallback = true, precomputedEmbedding, embeddingModel = "gemini", collectionSlugs } = options;
 
   return hybridSearchWithRerank({
     query, limit, reranker, preRerankLimit, postRerankLimit, preRerankCap: HADITH_PRE_RERANK_CAP,
     semanticSearch: (fetchLimit) =>
-      searchHadithsSemantic(query, fetchLimit, similarityCutoff, precomputedEmbedding, embeddingModel),
-    keywordSearch: (fetchLimit) => keywordSearchHadithsES(query, fetchLimit, { fuzzyFallback }),
+      searchHadithsSemantic(query, fetchLimit, similarityCutoff, precomputedEmbedding, embeddingModel, collectionSlugs),
+    keywordSearch: (fetchLimit) => keywordSearchHadithsES(query, fetchLimit, { fuzzyFallback, collectionSlugs }),
     getKey: (h) => `${h.collectionSlug}-${h.hadithNumber}`,
     formatForReranking: (h) => formatHadithForReranking(h),
   });

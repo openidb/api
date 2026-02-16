@@ -29,4 +29,5 @@ export interface SearchParams {
   queryExpansionModel: string;
   includeGraph: boolean;
   embeddingModel: EmbeddingModel;
+  hadithCollections: string[];
 }

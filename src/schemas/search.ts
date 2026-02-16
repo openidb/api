@@ -35,6 +35,7 @@ export const SearchQuery = z.object({
   refineHadithRerank: z.coerce.number().int().min(5).max(25).default(15),
   queryExpansionModel: z.string().default("gemini-flash"),
   includeGraph: z.enum(["true", "false"]).default("false"),
+  hadithCollections: z.string().default(""),
 });
 
 export const SearchResponse = z.object({

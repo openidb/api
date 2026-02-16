@@ -78,6 +78,9 @@ searchRoutes.openapi(search, async (c) => {
     queryExpansionModel: validated.queryExpansionModel,
     includeGraph: validated.includeGraph !== "false",
     embeddingModel: (validated.embeddingModel || "gemini") as EmbeddingModel,
+    hadithCollections: validated.hadithCollections
+      ? validated.hadithCollections.split(",").filter(Boolean)
+      : [],
   };
 
   try {
