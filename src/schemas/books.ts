@@ -34,7 +34,7 @@ export const BookPagesQuery = PaginationQuery.merge(z.object({
 // --- Body ---
 
 export const TranslateBody = z.object({
-  lang: z.enum(["en", "fr", "id", "ur", "es", "zh", "pt", "ru", "ja", "ko", "it", "bn"]).default("en").openapi({ example: "en", description: "Target language code" }),
+  lang: z.enum(["en", "fr", "id", "ur", "es", "zh", "pt", "ru", "ja", "ko", "it", "bn", "ha", "sw", "nl", "de", "tr", "fa", "hi", "ms", "pa", "ku", "ps", "so", "uz", "yo", "ta"]).default("en").openapi({ example: "en", description: "Target language code" }),
   model: z.enum(["gemini-flash", "gpt-oss-120b"]).default("gemini-flash").openapi({ example: "gemini-flash" }),
 });
 

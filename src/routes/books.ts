@@ -20,6 +20,10 @@ const LANGUAGE_NAMES: Record<string, string> = {
   en: "English", fr: "French", id: "Indonesian", ur: "Urdu",
   es: "Spanish", zh: "Chinese", pt: "Portuguese", ru: "Russian",
   ja: "Japanese", ko: "Korean", it: "Italian", bn: "Bengali",
+  ha: "Hausa", sw: "Swahili", nl: "Dutch", de: "German",
+  tr: "Turkish", fa: "Persian", hi: "Hindi", ms: "Malay",
+  pa: "Punjabi", ku: "Kurdish", ps: "Pashto", so: "Somali",
+  uz: "Uzbek", yo: "Yoruba", ta: "Tamil",
 };
 
 const MODEL_MAP: Record<string, string> = {
