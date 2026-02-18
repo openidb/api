@@ -218,3 +218,23 @@ export const AudioPathParam = z.object({
 export const AudioQuery = z.object({
   reciter: z.string().optional().openapi({ example: "everyayah/alafasy-128kbps", description: "Reciter slug" }),
 });
+
+// --- Segments (word-level timing) ---
+
+export const SegmentsQuery = z.object({
+  reciter: z.string().openapi({ example: "tarteel/alafasy", description: "Tarteel reciter slug" }),
+  surah: z.coerce.number().int().min(1).max(114).openapi({ example: 1, description: "Surah number (1-114)" }),
+});
+
+export const SegmentTuple = z.array(z.number()).openapi({ description: "[word_pos, start_ms, end_ms]" });
+
+export const AyahSegments = z.object({
+  segments: z.array(SegmentTuple),
+  duration: z.number().nullable(),
+});
+
+export const SegmentsResponse = z.object({
+  reciter: z.string(),
+  surah: z.number(),
+  ayahs: z.record(z.string(), AyahSegments),
+}).openapi("SegmentsResponse");

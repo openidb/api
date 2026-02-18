@@ -1,10 +1,11 @@
 import { OpenAPIHono, createRoute } from "@hono/zod-openapi";
-import { stat } from "fs/promises";
+import { readFile, stat } from "fs/promises";
+import { join } from "path";
 import { GetObjectCommand } from "@aws-sdk/client-s3";
 import s3 from "../s3";
 import { prisma } from "../db";
 import { generateQuranUrl, generateTafsirSourceUrl, generateTranslationSourceUrl, SOURCES } from "../utils/source-urls";
-import { audioFilePath } from "../utils/audio-storage";
+import { audioFilePath, getAudioBasePath } from "../utils/audio-storage";
 import { ErrorResponse } from "../schemas/common";
 import {
   SurahNumberParam, TafsirPathParam, TranslationPathParam,
@@ -14,6 +15,7 @@ import {
   TranslationListResponse, TranslationResponse,
   WordTranslationPathParam, WordTranslationQuery, WordTranslationResponse,
   ReciterListQuery, ReciterListResponse, AudioPathParam, AudioQuery,
+  SegmentsQuery, SegmentsResponse,
 } from "../schemas/quran";
 
 // --- Route definitions ---
@@ -177,9 +179,31 @@ const getAudio = createRoute({
   },
 });
 
+const getSegments = createRoute({
+  method: "get",
+  path: "/segments",
+  tags: ["Quran"],
+  summary: "Get word-level timing segments for a surah",
+  request: { query: SegmentsQuery },
+  responses: {
+    200: {
+      content: { "application/json": { schema: SegmentsResponse } },
+      description: "Word-level timing segments",
+    },
+    404: {
+      content: { "application/json": { schema: ErrorResponse } },
+      description: "Segments not available for this reciter",
+    },
+  },
+});
+
 // --- In-memory cache for static data (10-minute TTL) ---
 import { TTLCache } from "../lib/ttl-cache";
 const quranCache = new TTLCache<unknown>({ maxSize: 100, ttlMs: 10 * 60 * 1000, evictionCount: 20, label: "Quran" });
+
+// --- Segment data cache (in-memory, never expires — segments don't change) ---
+const SEGMENT_RECITERS = ["tarteel/alafasy", "tarteel/sudais", "tarteel/rifai"];
+const segmentCache = new Map<string, Record<string, { segments: number[][]; duration: number | null }>>();
 
 // --- Handlers ---
 
@@ -489,4 +513,40 @@ quranRoutes.openapi(getAudio, async (c) => {
       "Cache-Control": "public, max-age=86400, immutable",
     },
   }) as unknown as ReturnType<typeof c.json>;
+});
+
+// --- Word-level timing segments ---
+
+quranRoutes.openapi(getSegments, async (c) => {
+  const { reciter, surah } = c.req.valid("query");
+
+  if (!SEGMENT_RECITERS.includes(reciter)) {
+    return c.json({ error: "Segments not available for this reciter" }, 404);
+  }
+
+  // Load and cache the _segments.json file
+  if (!segmentCache.has(reciter)) {
+    try {
+      const filePath = join(getAudioBasePath(), reciter, "_segments.json");
+      const raw = await readFile(filePath, "utf-8");
+      segmentCache.set(reciter, JSON.parse(raw));
+    } catch (e) {
+      console.error(`[segments] Failed to load segments for ${reciter}:`, e);
+      return c.json({ error: "Segments file not found" }, 404);
+    }
+  }
+
+  const allSegments = segmentCache.get(reciter)!;
+  const prefix = `${surah}:`;
+  const ayahs: Record<string, { segments: number[][]; duration: number | null }> = {};
+
+  for (const [key, value] of Object.entries(allSegments)) {
+    if (key.startsWith(prefix)) {
+      const ayahNum = key.slice(prefix.length);
+      ayahs[ayahNum] = value;
+    }
+  }
+
+  c.header("Cache-Control", "public, max-age=86400");
+  return c.json({ reciter, surah, ayahs }, 200);
 });
