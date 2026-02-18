@@ -1,15 +1,30 @@
 /**
  * Upload Quran audio files to RustFS (S3-compatible storage).
- * Usage: bun run pipelines/import/upload-quran-audio.ts
+ *
+ * Usage:
+ *   bun run pipelines/import/upload-quran-audio.ts --reciter=alafasy-128kbps
+ *   bun run pipelines/import/upload-quran-audio.ts --reciter=maher-almuaiqly-128kbps
+ *
+ * Options:
+ *   --reciter=<slug>   Reciter folder name (used as S3 prefix and dir name)
+ *   --audio-dir=<path> Override audio directory (default: $QURAN_AUDIO_PATH/everyayah/<reciter>)
  */
 
 import { S3Client, PutObjectCommand, CreateBucketCommand, HeadBucketCommand } from "@aws-sdk/client-s3";
 import { readdir, readFile } from "fs/promises";
 import { join } from "path";
 
-const AUDIO_DIR = process.env.AUDIO_DIR || "/Volumes/KIOXIA/quran-audio/everyayah/alafasy-128kbps";
+const args = process.argv.slice(2);
+function getArg(name: string): string | undefined {
+  const arg = args.find((a) => a.startsWith(`--${name}=`));
+  return arg?.split("=")[1];
+}
+
+const RECITER = getArg("reciter") || "alafasy-128kbps";
+const BASE_PATH = process.env.QURAN_AUDIO_PATH || process.env.AUDIO_DIR || "/Volumes/KIOXIA/quran-audio";
+const AUDIO_DIR = getArg("audio-dir") || join(BASE_PATH, "everyayah", RECITER);
 const BUCKET = "quran-audio";
-const PREFIX = "alafasy-128kbps";
+const PREFIX = RECITER;
 const CONCURRENCY = 20;
 
 const s3 = new S3Client({
@@ -46,6 +61,10 @@ async function uploadFile(filename: string): Promise<void> {
 }
 
 async function main() {
+  console.log(`Reciter: ${RECITER}`);
+  console.log(`Audio dir: ${AUDIO_DIR}`);
+  console.log(`S3 prefix: ${PREFIX}/`);
+
   await ensureBucket();
 
   const files = (await readdir(AUDIO_DIR)).filter(f => f.endsWith(".mp3")).sort();
@@ -54,7 +73,6 @@ async function main() {
   let uploaded = 0;
   let failed = 0;
 
-  // Process in batches
   for (let i = 0; i < files.length; i += CONCURRENCY) {
     const batch = files.slice(i, i + CONCURRENCY);
     const results = await Promise.allSettled(batch.map(f => uploadFile(f)));
