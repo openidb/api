@@ -10,7 +10,6 @@
     "test": "bun test"
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.74.0",
     "@aws-sdk/client-s3": "^3.987.0",
     "@aws-sdk/s3-request-presigner": "^3.987.0",
     "@elastic/elasticsearch": "^9.3.0",
@@ -20,8 +19,6 @@
     "@qdrant/js-client-rest": "^1.16.2",
     "@scalar/hono-api-reference": "^0.9.40",
     "better-sqlite3": "^12.6.2",
-    "cheerio": "^1.1.2",
-    "dotenv": "^17.2.3",
     "hono": "^4",
     "hono-rate-limiter": "^0.5.3",
     "neo4j-driver": "^6.0.1",
@@ -30,6 +27,9 @@
     "zod": "^4.3.6"
   },
   "devDependencies": {
+    "@anthropic-ai/sdk": "^0.74.0",
+    "cheerio": "^1.1.2",
+    "dotenv": "^17.2.3",
     "@types/better-sqlite3": "^7.6.13",
     "@types/node": "^22.0.0",
     "@types/pg": "^8.16.0",

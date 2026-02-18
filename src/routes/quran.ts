@@ -178,19 +178,8 @@ const getAudio = createRoute({
 });
 
 // --- In-memory cache for static data (10-minute TTL) ---
-const CACHE_TTL_MS = 10 * 60 * 1000;
-const quranCache = new Map<string, { data: unknown; expiry: number }>();
-
-function getCached<T>(key: string): T | null {
-  const entry = quranCache.get(key);
-  if (entry && Date.now() < entry.expiry) return entry.data as T;
-  quranCache.delete(key);
-  return null;
-}
-
-function setCache(key: string, data: unknown) {
-  quranCache.set(key, { data, expiry: Date.now() + CACHE_TTL_MS });
-}
+import { TTLCache } from "../lib/ttl-cache";
+const quranCache = new TTLCache<unknown>({ maxSize: 100, ttlMs: 10 * 60 * 1000, evictionCount: 20, label: "Quran" });
 
 // --- Handlers ---
 
@@ -198,7 +187,7 @@ export const quranRoutes = new OpenAPIHono();
 
 quranRoutes.openapi(listSurahs, async (c) => {
   const cacheKey = "surahs";
-  let surahs = getCached<any[]>(cacheKey);
+  let surahs = quranCache.get(cacheKey) as any[] | null;
   if (!surahs) {
     surahs = await prisma.surah.findMany({
       orderBy: { number: "asc" },
@@ -210,9 +199,9 @@ quranRoutes.openapi(listSurahs, async (c) => {
         ayahCount: true,
       },
     });
-    setCache(cacheKey, surahs);
+    quranCache.set(cacheKey, surahs);
   }
-  c.header("Cache-Control", "public, max-age=3600");
+  c.header("Cache-Control", "public, max-age=86400, stale-while-revalidate=86400");
   return c.json({
     surahs,
     _sources: [...SOURCES.quranCloud],
@@ -243,7 +232,7 @@ quranRoutes.openapi(getSurah, async (c) => {
     return c.json({ error: "Surah not found" }, 404);
   }
 
-  c.header("Cache-Control", "public, max-age=86400");
+  c.header("Cache-Control", "public, max-age=86400, stale-while-revalidate=86400");
   return c.json({
     surah: {
       ...surah,
@@ -306,7 +295,7 @@ quranRoutes.openapi(listAyahs, async (c) => {
 quranRoutes.openapi(listTafsirs, async (c) => {
   const { language } = c.req.valid("query");
   const cacheKey = `tafsirs:${language || "all"}`;
-  let tafsirs = getCached<any[]>(cacheKey);
+  let tafsirs = quranCache.get(cacheKey) as any[] | null;
   if (!tafsirs) {
     const where: Record<string, unknown> = {};
     if (language) where.language = language;
@@ -314,7 +303,7 @@ quranRoutes.openapi(listTafsirs, async (c) => {
       where,
       orderBy: [{ language: "asc" }, { name: "asc" }],
     });
-    setCache(cacheKey, tafsirs);
+    quranCache.set(cacheKey, tafsirs);
   }
 
   return c.json({ tafsirs, count: tafsirs.length, _sources: [...SOURCES.tafsir, ...SOURCES.qul] }, 200);
@@ -348,7 +337,7 @@ quranRoutes.openapi(getTafsir, async (c) => {
 quranRoutes.openapi(listTranslations, async (c) => {
   const { language } = c.req.valid("query");
   const cacheKey = `translations:${language || "all"}`;
-  let translations = getCached<any[]>(cacheKey);
+  let translations = quranCache.get(cacheKey) as any[] | null;
   if (!translations) {
     const where: Record<string, unknown> = {};
     if (language) where.language = language;
@@ -356,7 +345,7 @@ quranRoutes.openapi(listTranslations, async (c) => {
       where,
       orderBy: [{ language: "asc" }, { name: "asc" }],
     });
-    setCache(cacheKey, translations);
+    quranCache.set(cacheKey, translations);
   }
 
   return c.json({ translations, count: translations.length, _sources: [...SOURCES.quranTranslation, ...SOURCES.qul] }, 200);
@@ -398,7 +387,7 @@ quranRoutes.openapi(getWordTranslations, async (c) => {
     select: { wordPosition: true, text: true, transliteration: true },
   });
 
-  c.header("Cache-Control", "public, max-age=86400");
+  c.header("Cache-Control", "public, max-age=86400, stale-while-revalidate=86400");
   return c.json({
     surahNumber,
     ayahNumber,
@@ -430,7 +419,7 @@ quranRoutes.openapi(listReciters, async (c) => {
     },
   });
 
-  c.header("Cache-Control", "public, max-age=3600");
+  c.header("Cache-Control", "public, max-age=86400, stale-while-revalidate=86400");
   return c.json({ reciters, count: reciters.length, _sources: [...SOURCES.quranAudio] }, 200);
 });
 

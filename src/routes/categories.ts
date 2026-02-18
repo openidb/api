@@ -8,19 +8,8 @@ import {
 } from "../schemas/categories";
 
 // --- Category list cache (5-minute TTL) ---
-const CACHE_TTL_MS = 5 * 60 * 1000;
-const categoryCache = new Map<string, { data: unknown; expiry: number }>();
-
-function getCached<T>(key: string): T | null {
-  const entry = categoryCache.get(key);
-  if (entry && Date.now() < entry.expiry) return entry.data as T;
-  categoryCache.delete(key);
-  return null;
-}
-
-function setCache(key: string, data: unknown) {
-  categoryCache.set(key, { data, expiry: Date.now() + CACHE_TTL_MS });
-}
+import { TTLCache } from "../lib/ttl-cache";
+const categoryCache = new TTLCache<unknown>({ maxSize: 50, ttlMs: 5 * 60 * 1000, evictionCount: 10, label: "Category" });
 
 const listCategories = createRoute({
   method: "get",
@@ -77,8 +66,7 @@ categoriesRoutes.openapi(listCategories, async (c) => {
         SELECT b.category_id, COUNT(*)::int AS cnt
         FROM books b
         JOIN authors a ON a.id = b.author_id
-        WHERE a.death_date_hijri ~ '^[0-9]+$'
-          AND CEIL(CAST(a.death_date_hijri AS DOUBLE PRECISION) / 100)::int = ANY(${centuryFilter}::int[])
+        WHERE a.death_century_hijri = ANY(${centuryFilter}::int[])
         GROUP BY b.category_id
       ) bc ON bc.category_id = c.id
       ORDER BY c.name_arabic
@@ -95,12 +83,13 @@ categoriesRoutes.openapi(listCategories, async (c) => {
       })),
       _sources: [...SOURCES.turath],
     };
+    c.header("Cache-Control", "public, max-age=86400, stale-while-revalidate=86400");
     return c.json(result, 200);
   }
 
   const cacheKey = flat === "true" ? "flat" : "tree";
 
-  const cached = getCached<{ categories: unknown; _sources: unknown }>(cacheKey);
+  const cached = categoryCache.get(cacheKey) as { categories: unknown; _sources: unknown } | null;
   if (cached) return c.json(cached, 200);
 
   const categories = await prisma.category.findMany({
@@ -127,7 +116,8 @@ categoriesRoutes.openapi(listCategories, async (c) => {
       })),
       _sources: [...SOURCES.turath],
     };
-    setCache(cacheKey, result);
+    categoryCache.set(cacheKey, result);
+    c.header("Cache-Control", "public, max-age=86400, stale-while-revalidate=86400");
     return c.json(result, 200);
   }
 
@@ -168,7 +158,8 @@ categoriesRoutes.openapi(listCategories, async (c) => {
     categories: roots,
     _sources: [...SOURCES.turath],
   };
-  setCache(cacheKey, result);
+  categoryCache.set(cacheKey, result);
+  c.header("Cache-Control", "public, max-age=86400, stale-while-revalidate=86400");
   return c.json(result, 200);
 });
 
@@ -208,6 +199,7 @@ categoriesRoutes.openapi(getCategory, async (c) => {
     prisma.book.count({ where: { categoryId: id } }),
   ]);
 
+  c.header("Cache-Control", "public, max-age=86400, stale-while-revalidate=86400");
   return c.json({
     category,
     books,

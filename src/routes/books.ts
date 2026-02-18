@@ -2,6 +2,7 @@ import { OpenAPIHono, createRoute } from "@hono/zod-openapi";
 import { z } from "@hono/zod-openapi";
 import { prisma } from "../db";
 import { callOpenRouter } from "../lib/openrouter";
+import { getInflight, setInflight, type TranslationResult } from "../lib/translation-tracker";
 import { generateBookReferenceUrl, generatePageReferenceUrl, SOURCES } from "../utils/source-urls";
 import { hashPageTranslation } from "../utils/content-hash";
 import { detectPdfStorage } from "../utils/pdf-storage";
@@ -218,11 +219,10 @@ booksRoutes.openapi(listBooks, async (c) => {
   if (century) {
     const centuries = century.split(",").map(Number).filter((n) => n >= 1 && n <= 15);
     if (centuries.length > 0) {
-      const authorRows = await prisma.$queryRaw<{ id: string }[]>`
-        SELECT id FROM authors
-        WHERE death_date_hijri ~ '^[0-9]+$'
-          AND CEIL(CAST(death_date_hijri AS DOUBLE PRECISION) / 100)::int = ANY(${centuries})
-      `;
+      const authorRows = await prisma.author.findMany({
+        where: { deathCenturyHijri: { in: centuries } },
+        select: { id: true },
+      });
       centuryAuthorIds = authorRows.map((a) => a.id);
       if (centuryAuthorIds.length === 0) {
         // No authors match these centuries — return empty immediately
@@ -351,6 +351,7 @@ booksRoutes.openapi(listBooks, async (c) => {
   const idOrder = new Map(orderedIds.map((id, i) => [id, i]));
   books.sort((a, b) => (idOrder.get(a.id) ?? 0) - (idOrder.get(b.id) ?? 0));
 
+  c.header("Cache-Control", "public, max-age=3600, stale-while-revalidate=86400");
   return c.json({
     books: books.map((b) => {
       const { titleTranslations, ...rest } = b as typeof b & {
@@ -439,6 +440,7 @@ booksRoutes.openapi(getBook, async (c) => {
     titleTranslations?: { title: string }[];
   };
 
+  c.header("Cache-Control", "public, max-age=86400, stale-while-revalidate=86400");
   return c.json({
     book: {
       ...rest,
@@ -452,44 +454,18 @@ booksRoutes.openapi(getBook, async (c) => {
   }, 200);
 });
 
-booksRoutes.openapi(translatePage, async (c) => {
-  const { id: bookId, page: pageNumber } = c.req.valid("param");
-  const { lang, model: modelKey } = c.req.valid("json");
-
+/** Run LLM translation for a page and save to DB. Standalone — no Hono context dependency. */
+async function performTranslation(
+  page: { id: number; contentHtml: string; bookId: number; pageNumber: number },
+  lang: string,
+  modelKey: string,
+): Promise<TranslationResult> {
   const model = MODEL_MAP[modelKey] || MODEL_MAP["gemini-flash"];
-
-  const targetLanguage = LANGUAGE_NAMES[lang];
-  if (!targetLanguage) {
-    return c.json({ error: "Unsupported language" }, 400);
-  }
-
-  const page = await prisma.page.findUnique({
-    where: { bookId_pageNumber: { bookId, pageNumber } },
-    select: { id: true, contentHtml: true, bookId: true, pageNumber: true },
-  });
-
-  if (!page) {
-    return c.json({ error: "Page not found" }, 404);
-  }
-
-  // Check cache
-  const existing = await prisma.pageTranslation.findUnique({
-    where: { pageId_language: { pageId: page.id, language: lang } },
-    select: { paragraphs: true, contentHash: true, model: true },
-  });
-  if (existing) {
-    const cachedModel = MODEL_MAP[existing.model ?? ""] ?? existing.model ?? "unknown";
-    return c.json({
-      paragraphs: existing.paragraphs as any,
-      contentHash: existing.contentHash,
-      cached: true,
-      _sources: [{ name: `LLM Translation (${cachedModel})`, url: "https://openrouter.ai", type: "llm" }],
-    }, 200);
-  }
+  const targetLanguage = LANGUAGE_NAMES[lang]!;
 
   const paragraphs = extractParagraphs(page.contentHtml);
   if (paragraphs.length === 0) {
-    return c.json({ paragraphs: [] }, 200);
+    return { paragraphs: [], contentHash: "", model };
   }
 
   const numberedParagraphs = paragraphs.map((p) => `[${p.index}] ${p.text}`).join("\n\n");
@@ -518,45 +494,99 @@ Respond with ONLY a valid JSON array, no other text. Example format:
 
   const result = await callOpenRouter({ model, messages: [{ role: "user", content: prompt }], temperature: 0.3, timeoutMs: 30000 });
   if (!result) {
-    return c.json({ error: "Translation service unavailable" }, 502);
+    throw new Error("Translation service unavailable");
   }
 
   let translations: { index: number; translation: string }[] = [];
-  try {
-    let cleaned = result.content.trim();
-    if (cleaned.startsWith("```json")) cleaned = cleaned.slice(7);
-    else if (cleaned.startsWith("```")) cleaned = cleaned.slice(3);
-    if (cleaned.endsWith("```")) cleaned = cleaned.slice(0, -3);
-    const parsed = JSON.parse(cleaned.trim());
-    if (!Array.isArray(parsed)) {
-      return c.json({ error: "Failed to parse translation" }, 400);
+  let cleaned = result.content.trim();
+  if (cleaned.startsWith("```json")) cleaned = cleaned.slice(7);
+  else if (cleaned.startsWith("```")) cleaned = cleaned.slice(3);
+  if (cleaned.endsWith("```")) cleaned = cleaned.slice(0, -3);
+  const parsed = JSON.parse(cleaned.trim());
+  if (!Array.isArray(parsed)) {
+    throw new Error("Failed to parse translation");
+  }
+  for (const item of parsed.slice(0, paragraphs.length)) {
+    if (
+      typeof item?.index === "number" && Number.isFinite(item.index) &&
+      typeof item?.translation === "string"
+    ) {
+      translations.push({ index: item.index, translation: item.translation.slice(0, 5000) });
     }
-    for (const item of parsed.slice(0, paragraphs.length)) {
-      if (
-        typeof item?.index === "number" && Number.isFinite(item.index) &&
-        typeof item?.translation === "string"
-      ) {
-        translations.push({ index: item.index, translation: item.translation.slice(0, 5000) });
-      }
-    }
-    if (translations.length === 0) {
-      return c.json({ error: "Failed to parse translation" }, 400);
-    }
-  } catch {
-    return c.json({ error: "Failed to parse translation" }, 400);
+  }
+  if (translations.length === 0) {
+    throw new Error("Failed to parse translation");
   }
 
   const contentHash = hashPageTranslation(page.bookId, page.pageNumber, lang, translations);
-  await prisma.pageTranslation.create({
-    data: { pageId: page.id, language: lang, model: modelKey, paragraphs: translations, contentHash },
+  await prisma.pageTranslation.upsert({
+    where: { pageId_language: { pageId: page.id, language: lang } },
+    update: { model: modelKey, paragraphs: translations, contentHash },
+    create: { pageId: page.id, language: lang, model: modelKey, paragraphs: translations, contentHash },
   });
 
-  return c.json({
-    paragraphs: translations,
-    contentHash,
-    cached: false,
-    _sources: [{ name: `LLM Translation (${model})`, url: "https://openrouter.ai", type: "llm" }],
-  }, 200);
+  return { paragraphs: translations, contentHash, model };
+}
+
+booksRoutes.openapi(translatePage, async (c) => {
+  const { id: bookId, page: pageNumber } = c.req.valid("param");
+  const { lang, model: modelKey } = c.req.valid("json");
+
+  if (!LANGUAGE_NAMES[lang]) {
+    return c.json({ error: "Unsupported language" }, 400);
+  }
+
+  const page = await prisma.page.findUnique({
+    where: { bookId_pageNumber: { bookId, pageNumber } },
+    select: { id: true, contentHtml: true, bookId: true, pageNumber: true },
+  });
+
+  if (!page) {
+    return c.json({ error: "Page not found" }, 404);
+  }
+
+  // Check DB cache
+  const existing = await prisma.pageTranslation.findUnique({
+    where: { pageId_language: { pageId: page.id, language: lang } },
+    select: { paragraphs: true, contentHash: true, model: true },
+  });
+  if (existing) {
+    const cachedModel = MODEL_MAP[existing.model ?? ""] ?? existing.model ?? "unknown";
+    return c.json({
+      paragraphs: existing.paragraphs as any,
+      contentHash: existing.contentHash,
+      cached: true,
+      _sources: [{ name: `LLM Translation (${cachedModel})`, url: "https://openrouter.ai", type: "llm" }],
+    }, 200);
+  }
+
+  const trackerKey = `${page.id}:${lang}`;
+
+  try {
+    // Check for an in-flight translation (deduplication)
+    let translationPromise = getInflight(trackerKey);
+    if (!translationPromise) {
+      // No in-flight — start a new translation and register it
+      translationPromise = performTranslation(page, lang, modelKey);
+      setInflight(trackerKey, translationPromise);
+    }
+
+    const result = await translationPromise;
+
+    if (result.paragraphs.length === 0) {
+      return c.json({ paragraphs: [] }, 200);
+    }
+
+    return c.json({
+      paragraphs: result.paragraphs,
+      contentHash: result.contentHash,
+      cached: false,
+      _sources: [{ name: `LLM Translation (${result.model})`, url: "https://openrouter.ai", type: "llm" }],
+    }, 200);
+  } catch (err) {
+    console.error("[translate-page]", err);
+    return c.json({ error: "Translation service unavailable" }, 502);
+  }
 });
 
 booksRoutes.openapi(getPage, async (c) => {
@@ -584,6 +614,7 @@ booksRoutes.openapi(getPage, async (c) => {
     return c.json({ error: "Page not found" }, 404);
   }
 
+  c.header("Cache-Control", "public, max-age=86400, stale-while-revalidate=86400, immutable");
   return c.json({
     page: {
       ...page,

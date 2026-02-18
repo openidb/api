@@ -224,7 +224,9 @@ export async function searchAyahsSemantic(
     const searchResults = await qdrant.search(emConfig.quranCollection, {
       vector: queryEmbedding,
       limit: limit,
-      with_payload: true,
+      with_payload: {
+        include: ["surahNumber", "ayahNumber", "surahNameArabic", "surahNameEnglish", "text", "textPlain", "juzNumber", "pageNumber"],
+      },
       score_threshold: effectiveCutoff,
     });
 
@@ -358,7 +360,9 @@ export async function searchHadithsSemantic(
     const searchResults = await qdrant.search(emConfig.hadithCollection, {
       vector: queryEmbedding,
       limit: limit,
-      with_payload: true,
+      with_payload: {
+        include: ["collectionSlug", "collectionNameArabic", "collectionNameEnglish", "bookNumber", "bookNameArabic", "bookNameEnglish", "hadithNumber", "text", "textPlain", "chapterArabic", "chapterEnglish", "bookId", "isChainVariation"],
+      },
       score_threshold: effectiveCutoff,
       filter: {
         must: mustFilters.length > 0 ? mustFilters : undefined,

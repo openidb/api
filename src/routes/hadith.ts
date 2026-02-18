@@ -1,6 +1,6 @@
 import { OpenAPIHono, createRoute } from "@hono/zod-openapi";
 import { prisma } from "../db";
-import { generateHadithSourceUrl, SOURCES } from "../utils/source-urls";
+import { generateHadithSourceUrl, HADITHUNLOCKED_SLUGS, SOURCES } from "../utils/source-urls";
 import { ErrorResponse } from "../schemas/common";
 import {
   CollectionSlugParam, CollectionBookParam, HadithNumberParam,
@@ -82,7 +82,7 @@ const getHadith = createRoute({
 
 // --- Helpers ---
 
-// Extra hadith fields to include in select queries (hadithunlocked.com + legacy metadata)
+// Extra hadith fields to include in select queries (hadithunlocked.com + grading metadata)
 const EXTRA_HADITH_FIELDS_SELECT = {
   source: true,
   numberInCollection: true,
@@ -92,12 +92,7 @@ const EXTRA_HADITH_FIELDS_SELECT = {
   grade: true,
   gradeExplanation: true,
   graderName: true,
-  narratorName: true,
   sourceBookName: true,
-  numberOrPage: true,
-  takhrij: true,
-  categories: true,
-  sharhText: true,
 } as const;
 
 // Sunnah.com collection slugs
@@ -107,11 +102,8 @@ const SUNNAH_COM_SLUGS = new Set([
   "mishkat", "bulugh", "nawawi40", "qudsi40", "hisn",
 ]);
 
-// hadithunlocked.com collection slugs
-const HADITH_UNLOCKED_SLUGS = new Set([
-  "mustadrak", "ibn-hibban", "mujam-kabir", "sunan-kubra-bayhaqi",
-  "sunan-kubra-nasai", "suyuti", "ahmad-zuhd",
-]);
+// Alias for local use
+const HADITH_UNLOCKED_SLUGS = HADITHUNLOCKED_SLUGS;
 
 function isFromSunnah(slug: string): boolean {
   return SUNNAH_COM_SLUGS.has(slug);
@@ -138,12 +130,7 @@ function formatHadithForList(h: any, slug: string, bookNumber: number) {
     grade: h.grade ?? null,
     gradeExplanation: h.gradeExplanation ?? null,
     graderName: h.graderName ?? null,
-    narratorName: h.narratorName ?? null,
     sourceBookName: h.sourceBookName ?? null,
-    numberOrPage: h.numberOrPage ?? null,
-    takhrij: h.takhrij ?? null,
-    categories: h.categories ?? null,
-    sharhText: h.sharhText ?? null,
   };
 }
 
@@ -162,7 +149,7 @@ hadithRoutes.openapi(listCollections, async (c) => {
     },
   });
 
-  c.header("Cache-Control", "public, max-age=3600");
+  c.header("Cache-Control", "public, max-age=86400, stale-while-revalidate=86400");
   return c.json({
     collections: collections.map((col) => ({
       slug: col.slug,
@@ -197,7 +184,7 @@ hadithRoutes.openapi(getCollection, async (c) => {
     return c.json({ error: "Collection not found" }, 404);
   }
 
-  c.header("Cache-Control", "public, max-age=86400");
+  c.header("Cache-Control", "public, max-age=86400, stale-while-revalidate=86400");
   return c.json({
     collection: {
       slug: collection.slug,
@@ -296,7 +283,6 @@ hadithRoutes.openapi(getHadith, async (c) => {
   return c.json({
     hadith: {
       ...hadith,
-      categories: hadith.categories as Array<{ id: number; name: string }> | null,
       sourceUrl: generateHadithSourceUrl(slug, hadith.hadithNumber, hadith.book.bookNumber, hadith.numberInCollection),
     },
     _sources: getSourcesForSlug(slug),

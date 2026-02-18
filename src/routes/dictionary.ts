@@ -270,36 +270,32 @@ dictionaryRoutes.openapi(lookupRoute, async (c) => {
     }
   }
 
-  // Batch 1: Exact sub-entry (tier 1) + exact full-entry (tier 3) in parallel
+  // Combined lookup: exact sub, exact full, stripped sub, stripped full in one query
   if (definitions.length === 0) {
-    const [exactSubs, exactFull] = await Promise.all([
+    const needsStripped = stripped !== wordNormalized;
+    const [exactSubs, exactFull, strippedSubs, strippedFull] = await Promise.all([
       findSubEntriesByHeadword(wordNormalized, LOOKUP_LIMIT),
       prisma.dictionaryEntry.findMany({
         where: { headwordNormalized: wordNormalized },
         include: { source: { select: SOURCE_SELECT } },
         take: LOOKUP_LIMIT,
       }),
+      needsStripped ? findSubEntriesByHeadword(stripped, LOOKUP_LIMIT) : Promise.resolve([]),
+      needsStripped ? prisma.dictionaryEntry.findMany({
+        where: { headwordNormalized: stripped },
+        include: { source: { select: SOURCE_SELECT } },
+        take: LOOKUP_LIMIT,
+      }) : Promise.resolve([]),
     ]);
+
+    // Pick highest-priority tier with results
     if (exactSubs.length > 0) {
       definitions = exactSubs.map((s) => subEntryToDefinition(s, "exact"));
       matchStrategy = "exact";
     } else if (exactFull.length > 0) {
       definitions = exactFull.map((e) => fullEntryToDefinition(e, "exact", word));
       matchStrategy = "exact";
-    }
-  }
-
-  // Batch 2: Stripped sub-entry (tier 2) + stripped full-entry (tier 4) in parallel
-  if (definitions.length === 0 && stripped !== wordNormalized) {
-    const [strippedSubs, strippedFull] = await Promise.all([
-      findSubEntriesByHeadword(stripped, LOOKUP_LIMIT),
-      prisma.dictionaryEntry.findMany({
-        where: { headwordNormalized: stripped },
-        include: { source: { select: SOURCE_SELECT } },
-        take: LOOKUP_LIMIT,
-      }),
-    ]);
-    if (strippedSubs.length > 0) {
+    } else if (strippedSubs.length > 0) {
       definitions = strippedSubs.map((s) => subEntryToDefinition(s, "exact"));
       matchStrategy = "exact_stripped";
     } else if (strippedFull.length > 0) {
@@ -336,7 +332,7 @@ dictionaryRoutes.openapi(lookupRoute, async (c) => {
   // Dedup: one best result per source
   definitions = dedup(definitions);
 
-  c.header("Cache-Control", "public, max-age=3600");
+  c.header("Cache-Control", "public, max-age=86400, stale-while-revalidate=86400");
   return c.json(
     {
       word,
@@ -355,7 +351,7 @@ dictionaryRoutes.openapi(sourcesRoute, async (c) => {
     select: { id: true, slug: true, nameArabic: true, nameEnglish: true, author: true, bookId: true },
   });
 
-  c.header("Cache-Control", "public, max-age=3600");
+  c.header("Cache-Control", "public, max-age=86400, stale-while-revalidate=86400");
   return c.json({ sources, _sources: SOURCES.turath }, 200);
 });
 
@@ -378,30 +374,28 @@ dictionaryRoutes.openapi(rootFamilyRoute, async (c) => {
   const { root } = c.req.valid("param");
   const rootNormalized = normalizeArabic(root);
 
-  // Get all derived forms from arabic_roots table
-  const derivedForms = await prisma.arabicRoot.findMany({
-    where: { root: rootNormalized },
-    orderBy: [{ partOfSpeech: "asc" }, { word: "asc" }],
-    take: 200,
-  });
-
-  // Get sub-entries for this root (preferred — word-level definitions)
-  const subEntries = await prisma.dictionarySubEntry.findMany({
-    where: { rootNormalized },
-    include: {
-      source: { select: SOURCE_SELECT },
-      entry: { select: { bookId: true, startPage: true, endPage: true } },
-    },
-    orderBy: [{ sourceId: "asc" }, { position: "asc" }],
-    take: 100,
-  });
-
-  // Get full dictionary entries for this root (for sources without sub-entries)
-  const fullEntries = await prisma.dictionaryEntry.findMany({
-    where: { rootNormalized },
-    include: { source: { select: SOURCE_SELECT } },
-    take: LOOKUP_LIMIT,
-  });
+  // Fetch all three queries in parallel (independent DB lookups)
+  const [derivedForms, subEntries, fullEntries] = await Promise.all([
+    prisma.arabicRoot.findMany({
+      where: { root: rootNormalized },
+      orderBy: [{ partOfSpeech: "asc" }, { word: "asc" }],
+      take: 200,
+    }),
+    prisma.dictionarySubEntry.findMany({
+      where: { rootNormalized },
+      include: {
+        source: { select: SOURCE_SELECT },
+        entry: { select: { bookId: true, startPage: true, endPage: true } },
+      },
+      orderBy: [{ sourceId: "asc" }, { position: "asc" }],
+      take: 100,
+    }),
+    prisma.dictionaryEntry.findMany({
+      where: { rootNormalized },
+      include: { source: { select: SOURCE_SELECT } },
+      take: LOOKUP_LIMIT,
+    }),
+  ]);
 
   // Merge: prefer sub-entries, fall back to full entries for sources without sub-entries
   const sourcesWithSubs = new Set(subEntries.map((s) => s.source.id));
@@ -440,7 +434,7 @@ dictionaryRoutes.openapi(rootFamilyRoute, async (c) => {
     });
   }
 
-  c.header("Cache-Control", "public, max-age=3600");
+  c.header("Cache-Control", "public, max-age=86400, stale-while-revalidate=86400");
   return c.json(
     {
       root,
@@ -482,7 +476,7 @@ dictionaryRoutes.openapi(resolveRoute, async (c) => {
 
   const resolutions = await resolveRoot(word, lookupRoots, rootExists);
 
-  c.header("Cache-Control", "public, max-age=3600");
+  c.header("Cache-Control", "public, max-age=86400, stale-while-revalidate=86400");
   return c.json(
     {
       word,

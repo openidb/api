@@ -36,7 +36,7 @@ const DEFINITE_ARTICLE_PREFIXES = ["بال", "فال", "وال", "كال", "لل
  * Normalize all hamza variants to bare alef.
  * Used specifically for root extraction where ء ؤ ئ أ إ all represent the same consonant.
  */
-export function normalizeHamza(text: string): string {
+function normalizeHamza(text: string): string {
   return text.replace(HAMZA_NORMALIZE_RE, "\u0627"); // → ا
 }
 
@@ -69,7 +69,7 @@ const IMPERFECT_SUFFIXES = ["ون", "ان", "ين", "وا", "ن"];
  * يستقيمون → ستقيم, تكتبان → كتبا, يكتبون → كتب
  * Returns array of candidates (original + stripped forms).
  */
-export function stripImperfectAffixes(word: string): string[] {
+function stripImperfectAffixes(word: string): string[] {
   const norm = normalizeArabic(word);
   const candidates: string[] = [];
 
@@ -97,7 +97,7 @@ export function stripImperfectAffixes(word: string): string[] {
  * Light Arabic stemmer for dictionary root matching.
  * Normalizes then strips one prefix and one suffix if the remaining word has length > 2.
  */
-export function stemArabic(word: string): string {
+function stemArabic(word: string): string {
   let stem = normalizeArabic(word);
 
   // Strip one prefix
@@ -347,9 +347,9 @@ export function normalizeWeakRoot(root: string): string[] {
   return [...new Set(candidates)];
 }
 
-export type RootConfidence = "high" | "medium" | "low";
+type RootConfidence = "high" | "medium" | "low";
 
-export interface RootResolution {
+interface RootResolution {
   root: string;
   confidence: RootConfidence;
   tier: "direct" | "stripped" | "stemmed" | "verb_stem" | "pattern" | "stem_pattern";

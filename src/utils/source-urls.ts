@@ -29,6 +29,12 @@ export const SOURCES = {
 // Collections that use /collection/book/hadith format instead of /collection:hadith
 const BOOK_PATH_COLLECTIONS = new Set(["malik", "bulugh"]);
 
+/** Collection slugs sourced from hadithunlocked.com */
+export const HADITHUNLOCKED_SLUGS = new Set([
+  "mustadrak", "ibn-hibban", "mujam-kabir", "sunan-kubra-bayhaqi",
+  "sunan-kubra-nasai", "suyuti", "ahmad-zuhd",
+]);
+
 // Slug → hadithunlocked.com alias mapping (reverse of import script's ALIAS_TO_SLUG)
 const SLUG_TO_HADITHUNLOCKED_ALIAS: Record<string, string> = {
   mustadrak: "hakim",
@@ -61,7 +67,7 @@ export function generateSunnahUrl(
  * Uses numberInCollection (the display number like "6204a-2") when available,
  * falls back to collection page if not.
  */
-export function generateHadithUnlockedUrl(
+function generateHadithUnlockedUrl(
   collectionSlug: string,
   numberInCollection?: string | null
 ): string {
@@ -149,6 +155,6 @@ export function generateTranslationSourceUrl(editionId: string): string {
 /**
  * Generate a source URL for a QUL tafsir edition.
  */
-export function generateQulTafsirSourceUrl(resourceId: number, surahNumber: number): string {
+function generateQulTafsirSourceUrl(resourceId: number, surahNumber: number): string {
   return `https://qul.tarteel.ai/api/v1/tafsirs/${resourceId}/by_range?from=${surahNumber}:1&to=${surahNumber}:7`;
 }

@@ -1,17 +1,17 @@
 import { prisma } from "../../db";
 import { DB_STATS_CACHE_TTL } from "./config";
+import { TTLCache } from "../../lib/ttl-cache";
 import type { DatabaseStats } from "./types";
 
 // Database stats cache
-let databaseStatsCache: { stats: DatabaseStats; expires: number } | null = null;
+const statsCache = new TTLCache<DatabaseStats>({ maxSize: 1, ttlMs: DB_STATS_CACHE_TTL, evictionCount: 1, label: "DbStats" });
 
 /**
  * Get database statistics for debug panel (cached)
  */
 export async function getDatabaseStats(): Promise<DatabaseStats> {
-  if (databaseStatsCache && databaseStatsCache.expires > Date.now()) {
-    return databaseStatsCache.stats;
-  }
+  const cached = statsCache.get("stats");
+  if (cached) return cached;
 
   const [booksResult, pagesResult, hadithsResult, ayahsResult] = await Promise.all([
     prisma.book.count(),
@@ -27,7 +27,7 @@ export async function getDatabaseStats(): Promise<DatabaseStats> {
     totalAyahs: ayahsResult,
   };
 
-  databaseStatsCache = { stats, expires: Date.now() + DB_STATS_CACHE_TTL };
+  statsCache.set("stats", stats);
   return stats;
 }
 

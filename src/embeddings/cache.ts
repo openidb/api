@@ -1,9 +1,9 @@
 import { TTLCache } from "../lib/ttl-cache";
 
 const cache = new TTLCache<number[]>({
-  maxSize: 5000,
-  ttlMs: 30 * 60 * 1000,
-  evictionCount: 100,
+  maxSize: 20_000,
+  ttlMs: 24 * 60 * 60 * 1000, // 24 hours — embeddings are deterministic
+  evictionCount: 500,
   label: "Embedding",
 });
 
@@ -23,10 +23,3 @@ export function setCachedEmbeddings(entries: Array<{ text: string; embedding: nu
   cache.setMany(entries.map(({ text, embedding }) => ({ key: text, value: embedding })));
 }
 
-export function getCacheStats(): { size: number; maxSize: number; ttlMs: number } {
-  return cache.stats;
-}
-
-export function clearCache(): void {
-  cache.clear();
-}

@@ -11,7 +11,7 @@ import {
   type ResolvedSource,
 } from "../../graph/search";
 import { normalizeArabicText } from "../../embeddings";
-import { generatePageReferenceUrl, generateHadithSourceUrl } from "../../utils/source-urls";
+import { generatePageReferenceUrl, generateHadithSourceUrl, HADITHUNLOCKED_SLUGS } from "../../utils/source-urls";
 import { calculateRRFScore, getMatchType } from "./fusion";
 import { getSearchStrategy } from "./query-utils";
 import { RRF_K, SEMANTIC_WEIGHT, KEYWORD_WEIGHT } from "./config";
@@ -123,52 +123,58 @@ export async function fetchBookDetails(
   books: Array<{ id: string; titleArabic: string; titleLatin: string | null; filename: string; publicationYearHijri: string | null; publicationYearGregorian: string | null; titleTranslated: string | null; author: { nameArabic: string; nameLatin: string | null; deathDateHijri: string | null; deathDateGregorian: string | null } }>;
   timing: { bookMetadata: number };
 }> {
-  // Fetch urlPageIndex
-  if (rankedResults.length > 0) {
-    const pages = await prisma.page.findMany({
-      where: {
-        OR: rankedResults.map(r => ({ bookId: r.bookId, pageNumber: r.pageNumber })),
+  // Fetch urlPageIndex and book details in parallel
+  const bookIds = [...new Set(rankedResults.map((r) => r.bookId))];
+  const bookMetaTimer = startTimer();
+
+  const [pages, booksRaw] = await Promise.all([
+    rankedResults.length > 0
+      ? (async () => {
+          // Use VALUES list for cleaner query plan with many results
+          const values = rankedResults.map((_, i) => `($${i * 2 + 1}, $${i * 2 + 2})`).join(", ");
+          const params = rankedResults.flatMap(r => [r.bookId, r.pageNumber]);
+          return prisma.$queryRawUnsafe<{ book_id: string; page_number: number; url_page_index: string }[]>(
+            `SELECT book_id, page_number, url_page_index FROM pages WHERE (book_id, page_number) IN (VALUES ${values})`,
+            ...params,
+          );
+        })()
+      : Promise.resolve([]),
+    prisma.book.findMany({
+      where: { id: { in: bookIds } },
+      select: {
+        id: true,
+        titleArabic: true,
+        titleLatin: true,
+        filename: true,
+        publicationYearHijri: true,
+        publicationYearGregorian: true,
+        author: {
+          select: { nameArabic: true, nameLatin: true, deathDateHijri: true, deathDateGregorian: true },
+        },
+        ...(bookTitleLang && bookTitleLang !== "none" && bookTitleLang !== "transliteration"
+          ? {
+              titleTranslations: {
+                where: { language: bookTitleLang },
+                select: { title: true },
+                take: 1,
+              },
+            }
+          : {}),
       },
-      select: { bookId: true, pageNumber: true, urlPageIndex: true },
-    });
+    }),
+  ]);
+  const bookMetadataTime = bookMetaTimer();
 
+  // Apply pageMap
+  if (pages.length > 0) {
     const pageMap = new Map(
-      pages.map(p => [`${p.bookId}-${p.pageNumber}`, p.urlPageIndex])
+      pages.map((p: any) => [`${p.book_id ?? p.bookId}-${p.page_number ?? p.pageNumber}`, p.url_page_index ?? p.urlPageIndex])
     );
-
     rankedResults = rankedResults.map(r => ({
       ...r,
       urlPageIndex: pageMap.get(`${r.bookId}-${r.pageNumber}`) || String(r.pageNumber),
     }));
   }
-
-  // Fetch book details
-  const bookIds = [...new Set(rankedResults.map((r) => r.bookId))];
-  const bookMetaTimer = startTimer();
-  const booksRaw = await prisma.book.findMany({
-    where: { id: { in: bookIds } },
-    select: {
-      id: true,
-      titleArabic: true,
-      titleLatin: true,
-      filename: true,
-      publicationYearHijri: true,
-      publicationYearGregorian: true,
-      author: {
-        select: { nameArabic: true, nameLatin: true, deathDateHijri: true, deathDateGregorian: true },
-      },
-      ...(bookTitleLang && bookTitleLang !== "none" && bookTitleLang !== "transliteration"
-        ? {
-            titleTranslations: {
-              where: { language: bookTitleLang },
-              select: { title: true },
-              take: 1,
-            },
-          }
-        : {}),
-    },
-  });
-  const bookMetadataTime = bookMetaTimer();
 
   const books = booksRaw.map((book) => {
     const { titleTranslations, ...rest } = book as typeof book & {
@@ -370,11 +376,6 @@ export async function buildDebugStats(
  * Hadiths from hadithunlocked.com store hId as hadithNumber but need `num` (numberInCollection)
  * for correct deep links.
  */
-const HADITHUNLOCKED_SLUGS = new Set([
-  "mustadrak", "ibn-hibban", "mujam-kabir", "sunan-kubra-bayhaqi",
-  "sunan-kubra-nasai", "suyuti", "ahmad-zuhd",
-]);
-
 export async function resolveHadithSourceUrls(hadiths: HadithResult[]): Promise<HadithResult[]> {
   // Find hadithunlocked hadiths that need numberInCollection lookup
   const needsLookup = hadiths.filter(h => HADITHUNLOCKED_SLUGS.has(h.collectionSlug));

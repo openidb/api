@@ -112,12 +112,18 @@ export async function executeRefineSearch(params: SearchParams): Promise<RefineS
 
     if (shouldSkipKeyword) {
       const defaultMeta: AyahSearchMeta = { collection: quranCollectionName, usedFallback: false, embeddingTechnique: "metadata-translation" };
-      ayahResults = includeQuran
-        ? (await searchAyahsSemantic(q, refineAyahPerQuery, refineSimilarityCutoff, qEmbedding, embeddingModel).catch(err => { console.error("[RefineSearch] ayah search error:", err.message); return { results: [], meta: defaultMeta }; })).results
-        : [];
-      hadithResults = includeHadith
-        ? await searchHadithsSemantic(q, refineHadithPerQuery, refineSimilarityCutoff, qEmbedding, embeddingModel, collectionSlugsOpt).catch(err => { console.error("[RefineSearch] search error:", err.message); return []; })
-        : [];
+      const [ayahRes, hadithRes] = await Promise.all([
+        includeQuran
+          ? searchAyahsSemantic(q, refineAyahPerQuery, refineSimilarityCutoff, qEmbedding, embeddingModel)
+              .catch(err => { console.error("[RefineSearch] ayah search error:", err.message); return { results: [] as AyahRankedResult[], meta: defaultMeta }; })
+          : Promise.resolve({ results: [] as AyahRankedResult[], meta: defaultMeta }),
+        includeHadith
+          ? searchHadithsSemantic(q, refineHadithPerQuery, refineSimilarityCutoff, qEmbedding, embeddingModel, collectionSlugsOpt)
+              .catch(err => { console.error("[RefineSearch] search error:", err.message); return [] as HadithRankedResult[]; })
+          : Promise.resolve([] as HadithRankedResult[]),
+      ]);
+      ayahResults = ayahRes.results;
+      hadithResults = hadithRes;
     } else {
       const refineHybridOptionsWithEmbedding = {
         ...refineHybridOptions,
@@ -125,12 +131,18 @@ export async function executeRefineSearch(params: SearchParams): Promise<RefineS
         precomputedEmbedding: qEmbedding,
         embeddingModel,
       };
-      ayahResults = includeQuran
-        ? await searchAyahsHybrid(q, refineAyahPerQuery, refineHybridOptionsWithEmbedding).catch(err => { console.error("[RefineSearch] search error:", err.message); return []; })
-        : [];
-      hadithResults = includeHadith
-        ? await searchHadithsHybrid(q, refineHadithPerQuery, refineHybridOptionsWithEmbedding).catch(err => { console.error("[RefineSearch] search error:", err.message); return []; })
-        : [];
+      const [ayahRes, hadithRes] = await Promise.all([
+        includeQuran
+          ? searchAyahsHybrid(q, refineAyahPerQuery, refineHybridOptionsWithEmbedding)
+              .catch(err => { console.error("[RefineSearch] search error:", err.message); return [] as AyahRankedResult[]; })
+          : Promise.resolve([] as AyahRankedResult[]),
+        includeHadith
+          ? searchHadithsHybrid(q, refineHadithPerQuery, refineHybridOptionsWithEmbedding)
+              .catch(err => { console.error("[RefineSearch] search error:", err.message); return [] as HadithRankedResult[]; })
+          : Promise.resolve([] as HadithRankedResult[]),
+      ]);
+      ayahResults = ayahRes;
+      hadithResults = hadithRes;
     }
 
     perQueryTimings[queryIndex] = queryTimer();

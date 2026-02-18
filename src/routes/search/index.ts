@@ -14,6 +14,14 @@ import { logSearchEvent } from "../../analytics/log-search";
 import { clickRoutes } from "./click";
 import { hadithTranslateRoutes } from "./hadith-translate";
 import { SOURCES } from "../../utils/source-urls";
+import { TTLCache } from "../../lib/ttl-cache";
+
+const searchResponseCache = new TTLCache<object>({
+  maxSize: 2000,
+  ttlMs: 60 * 60 * 1000, // 1 hour — data is static
+  evictionCount: 200,
+  label: "SearchResponse",
+});
 
 const search = createRoute({
   method: "get",
@@ -83,6 +91,18 @@ searchRoutes.openapi(search, async (c) => {
       : [],
   };
 
+  // Check search response cache (excludes debug stats which have timing data)
+  const cacheKey = JSON.stringify({
+    q: params.query, mode: params.mode, limit: params.limit, offset: 0,
+    includeBooks: params.includeBooks, includeQuran: params.includeQuran, includeHadith: params.includeHadith,
+    hadithCollections: params.hadithCollections, bookId: params.bookId, reranker: params.reranker,
+    refine: params.refine, embeddingModel: params.embeddingModel, quranTranslation: params.quranTranslation,
+    bookTitleLang: params.bookTitleLang, bookContentTranslation: params.bookContentTranslation,
+    hadithTranslation: params.hadithTranslation,
+  });
+  const cached = searchResponseCache.get(cacheKey);
+  if (cached) return c.json(cached, 200);
+
   try {
     const _timing = {
       start: Date.now(),
@@ -149,30 +169,30 @@ searchRoutes.openapi(search, async (c) => {
     hadiths = translated.hadiths;
     _timing.translations = translationsTimer();
 
-    // Resolve hadithunlocked.com source URLs (needs DB lookup for display numbers)
-    hadiths = await resolveHadithSourceUrls(hadiths);
+    // Parallelize independent response pipeline operations
+    const [resolvedHadiths, graphCtx, bookDetails] = await Promise.all([
+      resolveHadithSourceUrls(hadiths),
+      resolveGraphContext(graphResult, params.includeGraph, ayahsRaw),
+      fetchBookDetails(rankedResults.slice(0, params.limit), params.bookTitleLang),
+    ]);
 
-    // Limit final results
-    rankedResults = rankedResults.slice(0, params.limit);
-
-    // Graph context resolution
-    const { graphContext, ayahsRaw: boostedAyahs } = await resolveGraphContext(graphResult, params.includeGraph, ayahsRaw);
-    ayahsRaw = boostedAyahs;
-
-    // Fetch book details & format results
-    const bookDetails = await fetchBookDetails(rankedResults, params.bookTitleLang);
+    hadiths = resolvedHadiths;
     rankedResults = bookDetails.results;
+    ayahsRaw = graphCtx.ayahsRaw;
     _timing.bookMetadata = bookDetails.timing.bookMetadata;
+    const graphContext = graphCtx.graphContext;
 
     const results = formatSearchResults(rankedResults, bookDetails.books, params.mode);
     const ayahs = translated.ayahs;
 
-    // Build debug stats
-    const debugStats = await buildDebugStats(
-      params, results, ayahs, hadiths, rankedResults,
-      ayahSearchMeta, totalAboveCutoff, rerankerTimedOut,
-      _timing, refineStats,
-    );
+    // Build debug stats (skip in production — fires 4 COUNT(*) queries)
+    const debugStats = process.env.NODE_ENV !== "production"
+      ? await buildDebugStats(
+          params, results, ayahs, hadiths, rankedResults,
+          ayahSearchMeta, totalAboveCutoff, rerankerTimedOut,
+          _timing, refineStats,
+        )
+      : undefined;
 
     // Fire-and-forget analytics logging (only when frontend sends event ID)
     const searchEventId = c.req.header("x-search-event-id");
@@ -214,7 +234,7 @@ searchRoutes.openapi(search, async (c) => {
       ...(params.includeHadith ? [...SOURCES.sunnah, ...SOURCES.hadithUnlocked] : []),
     ];
 
-    return c.json({
+    const responseBody = {
       query: params.query,
       mode: params.mode,
       count: results.length,
@@ -229,7 +249,13 @@ searchRoutes.openapi(search, async (c) => {
         expandedQueries,
       }),
       _sources,
-    }, 200);
+    };
+
+    // Cache without debug stats (they contain timing data)
+    const { debugStats: _ds, ...cacheable } = responseBody as typeof responseBody & { debugStats?: unknown };
+    searchResponseCache.set(cacheKey, cacheable);
+
+    return c.json(responseBody, 200);
   } catch (error) {
     console.error("Search error:", error);
 

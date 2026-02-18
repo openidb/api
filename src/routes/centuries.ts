@@ -63,13 +63,13 @@ centuriesRoutes.openapi(listCenturies, async (c) => {
 
     const rows = await prisma.$queryRaw<{ century: number; books_count: bigint }[]>`
       SELECT
-        CEIL(CAST(a.death_date_hijri AS DOUBLE PRECISION) / 100)::int AS century,
+        a.death_century_hijri AS century,
         COUNT(b.id)::bigint AS books_count
       FROM authors a
       JOIN books b ON b.author_id = a.id
-      WHERE a.death_date_hijri ~ '^[0-9]+$'
-      GROUP BY century
-      ORDER BY century
+      WHERE a.death_century_hijri IS NOT NULL
+      GROUP BY a.death_century_hijri
+      ORDER BY a.death_century_hijri
     `;
 
     const centuries = rows.map((r) => ({
@@ -83,6 +83,7 @@ centuriesRoutes.openapi(listCenturies, async (c) => {
     };
 
     centuryCache = { data: result, expiry: Date.now() + CACHE_TTL_MS };
+    c.header("Cache-Control", "public, max-age=86400, stale-while-revalidate=86400");
     return c.json(result, 200);
   }
 
@@ -90,14 +91,14 @@ centuriesRoutes.openapi(listCenturies, async (c) => {
   const [filteredRows, fullResult] = await Promise.all([
     prisma.$queryRaw<{ century: number; books_count: bigint }[]>`
       SELECT
-        CEIL(CAST(a.death_date_hijri AS DOUBLE PRECISION) / 100)::int AS century,
+        a.death_century_hijri AS century,
         COUNT(b.id)::bigint AS books_count
       FROM authors a
       JOIN books b ON b.author_id = a.id
-      WHERE a.death_date_hijri ~ '^[0-9]+$'
+      WHERE a.death_century_hijri IS NOT NULL
         AND b.category_id = ANY(${categoryFilter}::int[])
-      GROUP BY century
-      ORDER BY century
+      GROUP BY a.death_century_hijri
+      ORDER BY a.death_century_hijri
     `,
     // Get full unfiltered list (from cache or fresh)
     (async () => {
@@ -106,13 +107,13 @@ centuriesRoutes.openapi(listCenturies, async (c) => {
       }
       const rows = await prisma.$queryRaw<{ century: number; books_count: bigint }[]>`
         SELECT
-          CEIL(CAST(a.death_date_hijri AS DOUBLE PRECISION) / 100)::int AS century,
+          a.death_century_hijri AS century,
           COUNT(b.id)::bigint AS books_count
         FROM authors a
         JOIN books b ON b.author_id = a.id
-        WHERE a.death_date_hijri ~ '^[0-9]+$'
-        GROUP BY century
-        ORDER BY century
+        WHERE a.death_century_hijri IS NOT NULL
+        GROUP BY a.death_century_hijri
+        ORDER BY a.death_century_hijri
       `;
       const centuries = rows.map((r) => ({
         century: Number(r.century),
@@ -133,6 +134,7 @@ centuriesRoutes.openapi(listCenturies, async (c) => {
     booksCount: filteredMap.get(c.century) ?? 0,
   }));
 
+  c.header("Cache-Control", "public, max-age=86400, stale-while-revalidate=86400");
   return c.json({
     centuries,
     _sources: [...SOURCES.turath],
@@ -159,12 +161,12 @@ centuriesRoutes.openapi(listAuthorCenturies, async (c) => {
 
   const rows = await prisma.$queryRaw<{ century: number; authors_count: bigint }[]>`
     SELECT
-      CEIL(CAST(death_date_hijri AS DOUBLE PRECISION) / 100)::int AS century,
+      death_century_hijri AS century,
       COUNT(*)::bigint AS authors_count
     FROM authors
-    WHERE death_date_hijri ~ '^[0-9]+$'
-    GROUP BY century
-    ORDER BY century
+    WHERE death_century_hijri IS NOT NULL
+    GROUP BY death_century_hijri
+    ORDER BY death_century_hijri
   `;
 
   const centuries = rows.map((r) => ({
@@ -178,5 +180,6 @@ centuriesRoutes.openapi(listAuthorCenturies, async (c) => {
   };
 
   authorCenturyCache = { data: result, expiry: Date.now() + CACHE_TTL_MS };
+  c.header("Cache-Control", "public, max-age=86400, stale-while-revalidate=86400");
   return c.json(result, 200);
 });

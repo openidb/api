@@ -27,7 +27,7 @@ statsRoutes.openapi(getStats, async (c) => {
     safeCount(prisma.category.count()),
   ]);
 
-  c.header("Cache-Control", "public, max-age=3600");
+  c.header("Cache-Control", "public, max-age=86400, stale-while-revalidate=86400");
   return c.json({
     bookCount, authorCount, hadithCount, categoryCount,
     _sources: [...SOURCES.turath, ...SOURCES.quranCloud, ...SOURCES.sunnah, ...SOURCES.hadithUnlocked],

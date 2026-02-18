@@ -76,7 +76,7 @@ authorsRoutes.openapi(listAuthors, async (c) => {
   if (century) {
     const centuries = century.split(",").map(Number).filter((n) => n >= 1 && n <= 15);
     if (centuries.length > 0) {
-      conditions.push(`a.death_date_hijri ~ '^[0-9]+$' AND CEIL(CAST(a.death_date_hijri AS DOUBLE PRECISION) / 100)::int = ANY($${paramIdx}::int[])`);
+      conditions.push(`a.death_century_hijri = ANY($${paramIdx}::int[])`);
       params.push(centuries);
       paramIdx++;
     }
@@ -123,6 +123,7 @@ authorsRoutes.openapi(listAuthors, async (c) => {
   const idOrder = new Map(orderedIds.map((id, i) => [id, i]));
   authors.sort((a, b) => (idOrder.get(a.id) ?? 0) - (idOrder.get(b.id) ?? 0));
 
+  c.header("Cache-Control", "public, max-age=3600, stale-while-revalidate=86400");
   return c.json({
     authors: authors.map((a) => ({
       id: a.id,
@@ -183,6 +184,7 @@ authorsRoutes.openapi(getAuthor, async (c) => {
     return c.json({ error: "Author not found" }, 404);
   }
 
+  c.header("Cache-Control", "public, max-age=86400, stale-while-revalidate=86400");
   return c.json({
     author: {
       ...author,

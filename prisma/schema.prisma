@@ -32,6 +32,7 @@ model Author {
   deathDateHijri     String? @map("death_date_hijri")
   birthDateGregorian String? @map("birth_date_gregorian")
   deathDateGregorian String? @map("death_date_gregorian")
+  deathCenturyHijri  Int?    @map("death_century_hijri")
 
   // Biography
   biography       String? @db.Text
@@ -41,6 +42,7 @@ model Author {
   books      Book[]
   otherWorks AuthorWork[]
 
+  @@index([deathCenturyHijri])
   @@map("authors")
 }
 
@@ -439,29 +441,16 @@ model Hadith {
   matn      String? @db.Text // Hadith body text (Arabic, with tashkeel)
   gradeText String? @map("grade_text") // Full grade description (English, e.g. "Sound - agreed upon")
 
-  // Dorar.net metadata
-  dorarId           String?  @unique @map("dorar_id")
-  narratorName      String?  @map("narrator_name")        // الراوي
+  // Grading & metadata
   grade             String?                                // صحيح، حسن، ضعيف
   gradeExplanation  String?  @map("grade_explanation") @db.Text  // تفصيل الحكم
   graderName        String?  @map("grader_name")           // المحدث (الألباني، إلخ)
-  graderDorarId     Int?     @map("grader_dorar_id")       // Dorar scholar ID
   sourceBookName    String?  @map("source_book_name")      // المصدر (اسم الكتاب الأصلي)
-  sourceBookDorarId Int?     @map("source_book_dorar_id")  // Dorar book ID
-  numberOrPage      String?  @map("number_or_page")        // الصفحة أو الرقم
-  takhrij           String?  @db.Text                      // التخريج
-  categories        Json?                                  // [{id, name}] topic classifications
-  hasSimilar        Boolean? @default(false) @map("has_similar")
-  hasAlternate      Boolean? @default(false) @map("has_alternate")
-  hasUsul           Boolean? @default(false) @map("has_usul")
-  sharhText         String?  @map("sharh_text") @db.Text   // Commentary text
-  usulData          Json?    @map("usul_data")             // Transmission chains [{source, chain, hadithText}]
 
   book HadithBook @relation(fields: [bookId], references: [id])
 
   @@unique([bookId, hadithNumber])
   @@index([bookId])
-  @@index([dorarId])
   @@map("hadiths")
 }
 
@@ -478,6 +467,7 @@ model HadithTranslation {
   @@unique([bookId, hadithNumber, language])
   @@index([bookId, hadithNumber])
   @@index([language])
+  @@index([language, bookId, hadithNumber])
   @@map("hadith_translations")
 }
 

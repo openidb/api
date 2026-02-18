@@ -71,12 +71,7 @@ export const HadithSchema = z.object({
   grade: z.string().nullable().optional(),
   gradeExplanation: z.string().nullable().optional(),
   graderName: z.string().nullable().optional(),
-  narratorName: z.string().nullable().optional(),
   sourceBookName: z.string().nullable().optional(),
-  numberOrPage: z.string().nullable().optional(),
-  takhrij: z.string().nullable().optional(),
-  categories: z.array(z.object({ id: z.number(), name: z.string() })).nullable().optional(),
-  sharhText: z.string().nullable().optional(),
 });
 
 export const HadithBookResponse = z.object({
@@ -116,12 +111,7 @@ export const HadithDetailResponse = z.object({
     grade: z.string().nullable().optional(),
     gradeExplanation: z.string().nullable().optional(),
     graderName: z.string().nullable().optional(),
-    narratorName: z.string().nullable().optional(),
     sourceBookName: z.string().nullable().optional(),
-    numberOrPage: z.string().nullable().optional(),
-    takhrij: z.string().nullable().optional(),
-    categories: z.array(z.object({ id: z.number(), name: z.string() })).nullable().optional(),
-    sharhText: z.string().nullable().optional(),
     book: z.object({
       bookNumber: z.number(),
       nameEnglish: z.string().nullable(),
