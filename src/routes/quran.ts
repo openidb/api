@@ -453,7 +453,10 @@ quranRoutes.openapi(getAudio, async (c) => {
   }
 
   const filename = `${String(surah).padStart(3, "0")}${String(ayah).padStart(3, "0")}.mp3`;
-  const s3Key = `${slug}/${filename}`;
+  // RustFS stores files without source prefix: "alafasy-128kbps/001001.mp3"
+  // DB slugs include source prefix: "everyayah/alafasy-128kbps"
+  const reciterKey = slug.includes("/") ? slug.split("/").slice(1).join("/") : slug;
+  const s3Key = `${reciterKey}/${filename}`;
 
   // Try rustfs first, fall back to local disk
   try {
