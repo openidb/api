@@ -202,7 +202,7 @@ import { TTLCache } from "../lib/ttl-cache";
 const quranCache = new TTLCache<unknown>({ maxSize: 100, ttlMs: 10 * 60 * 1000, evictionCount: 20, label: "Quran" });
 
 // --- Segment data cache (in-memory, never expires — segments don't change) ---
-const SEGMENT_RECITERS = ["tarteel/alafasy", "tarteel/sudais", "tarteel/rifai", "tarteel/dossary"];
+const SEGMENT_RECITERS = ["tarteel/alafasy", "tarteel/sudais", "tarteel/rifai", "tarteel/dossary", "tarteel/muaiqly"];
 const segmentCache = new Map<string, Record<string, { segments: number[][]; duration: number | null }>>();
 
 // --- Handlers ---
