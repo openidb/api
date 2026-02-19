@@ -164,7 +164,7 @@ INTERNAL_API_SECRET=   # Shared secret for frontend → api internal calls
 Optional:
 ```
 OPENROUTER_API_KEY=    # Gemini embeddings and LLM reranking
-GROQ_API_KEY=          # Voice transcription
+OPENAI_API_KEY=        # Voice transcription (Whisper)
 DB_POOL_MAX=20         # PostgreSQL connection pool max (default: 20)
 ```
 

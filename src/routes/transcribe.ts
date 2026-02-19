@@ -8,7 +8,7 @@ const transcribe = createRoute({
   method: "post",
   path: "/",
   tags: ["Transcribe"],
-  summary: "Transcribe audio via Groq Whisper",
+  summary: "Transcribe audio via OpenAI Whisper",
   request: {
     body: {
       content: { "multipart/form-data": { schema: { type: "object" as const, properties: { audio: { type: "string" as const, format: "binary" } }, required: ["audio"] } } },
@@ -34,7 +34,7 @@ export const transcribeRoutes = new OpenAPIHono();
 
 // FormData validation is manual since Zod can't validate binary uploads
 transcribeRoutes.openapi(transcribe, async (c) => {
-  const apiKey = process.env.GROQ_API_KEY;
+  const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) {
     return c.json({ error: "Voice transcription is not configured" }, 400);
   }
@@ -62,26 +62,25 @@ transcribeRoutes.openapi(transcribe, async (c) => {
     .replace(/[\x00-\x1f\x7f]/g, "")
     .slice(0, 255);
 
-  const groqForm = new FormData();
-  groqForm.append("file", blob, fileName);
-  groqForm.append("model", "whisper-large-v3");
-  groqForm.append("response_format", "json");
-  groqForm.append("temperature", "0");
+  const openaiForm = new FormData();
+  openaiForm.append("file", blob, fileName);
+  openaiForm.append("model", "gpt-4o-transcribe");
+  openaiForm.append("response_format", "json");
 
   try {
     const response = await fetch(
-      "https://api.groq.com/openai/v1/audio/transcriptions",
+      "https://api.openai.com/v1/audio/transcriptions",
       {
         method: "POST",
         headers: { Authorization: `Bearer ${apiKey}` },
-        body: groqForm,
+        body: openaiForm,
         signal: AbortSignal.timeout(25_000),
       }
     );
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error("Groq API error:", response.status, errorText.slice(0, 200));
+      console.error("OpenAI API error:", response.status, errorText.slice(0, 200));
       return c.json({ error: "Transcription service failed" }, 502);
     }
 
