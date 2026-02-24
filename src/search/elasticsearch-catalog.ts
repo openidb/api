@@ -6,7 +6,93 @@
  * Returns null on ES errors to signal fallback to ILIKE.
  */
 
-import { elasticsearch, ES_BOOKS_INDEX, ES_AUTHORS_INDEX } from "./elasticsearch";
+import { elasticsearch, ES_BOOKS_INDEX, ES_AUTHORS_INDEX, ES_PAGES_INDEX } from "./elasticsearch";
+import { prisma } from "../db";
+import { qdrant, PAGES_COLLECTION } from "../qdrant";
+
+let indexedBookIdsCache: { ids: Set<string>; expiry: number } | null = null;
+
+// 24 Turath hadith source book IDs — their content is indexed per-hadith
+// (in separate ES/Qdrant collections), not per-page, so they always count as fully indexed.
+const HADITH_SOURCE_BOOK_IDS = new Set([
+  "1681", "1727", "1726", "7895", "1339", "1198", "25794", "1699",
+  "21795", "8360", "17757", "12991", "2348", "13037", "12836", "19482",
+  "31307", "8494", "1424", "537", "1733", "148486", "8361", "127677",
+]);
+
+/**
+ * Get the set of book IDs that are fully indexed in both ES and Qdrant.
+ * Hadith source books are always included (indexed per-hadith, not per-page).
+ * Results are cached for 5 minutes. Returns null if ES is unavailable.
+ */
+export async function getIndexedBookIds(): Promise<Set<string> | null> {
+  if (indexedBookIdsCache && Date.now() < indexedBookIdsCache.expiry) {
+    return indexedBookIdsCache.ids;
+  }
+  try {
+    // 1. Get per-book page counts from DB and ES in parallel
+    const [dbRows, esResult] = await Promise.all([
+      prisma.$queryRawUnsafe<{ book_id: string; count: bigint }[]>(
+        `SELECT book_id, COUNT(*)::bigint AS count FROM pages GROUP BY book_id`
+      ),
+      elasticsearch.search({
+        index: ES_PAGES_INDEX,
+        size: 0,
+        aggs: { book_ids: { terms: { field: "book_id", size: 15000 } } },
+      }),
+    ]);
+
+    const dbCounts = new Map(dbRows.map((r) => [r.book_id, Number(r.count)]));
+
+    const esBuckets = (esResult.aggregations?.book_ids as any)?.buckets ?? [];
+    const esCounts = new Map<string, number>(
+      esBuckets.map((b: any) => [String(b.key), b.doc_count as number])
+    );
+
+    // 2. Filter to books fully indexed in ES (es_count >= db_count)
+    const fullyInES: string[] = [];
+    esCounts.forEach((esCount, bookId) => {
+      const dbCount = dbCounts.get(bookId);
+      if (dbCount && esCount >= dbCount) {
+        fullyInES.push(bookId);
+      }
+    });
+
+    // 3. Check Qdrant for those books (parallel batches of 20)
+    const fullyIndexed = new Set<string>(HADITH_SOURCE_BOOK_IDS);
+    const BATCH_SIZE = 20;
+    for (let i = 0; i < fullyInES.length; i += BATCH_SIZE) {
+      const batch = fullyInES.slice(i, i + BATCH_SIZE);
+      const results = await Promise.all(
+        batch.map(async (bookId) => {
+          try {
+            const result = await qdrant.count(PAGES_COLLECTION, {
+              filter: {
+                must: [{ key: "bookId", match: { value: parseInt(bookId) } }],
+              },
+              exact: true,
+            });
+            return { bookId, qdrantCount: result.count };
+          } catch {
+            return { bookId, qdrantCount: 0 };
+          }
+        })
+      );
+      for (const { bookId, qdrantCount } of results) {
+        const dbCount = dbCounts.get(bookId)!;
+        if (qdrantCount >= dbCount) {
+          fullyIndexed.add(bookId);
+        }
+      }
+    }
+
+    indexedBookIdsCache = { ids: fullyIndexed, expiry: Date.now() + 5 * 60 * 1000 };
+    return fullyIndexed;
+  } catch (error) {
+    console.error("[ES] Failed to fetch indexed book IDs:", error);
+    return null;
+  }
+}
 
 const ARABIC_REGEX = /[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]/;
 const NUMERIC_REGEX = /^\d+$/;
