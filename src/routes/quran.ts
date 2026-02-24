@@ -588,6 +588,39 @@ quranRoutes.get("/mushaf/pdf", async (c) => {
   return c.json({ url, expiresIn });
 });
 
+// Stream mushaf PDF directly (supports range requests for pdf.js)
+quranRoutes.get("/mushaf/pdf/stream", async (c) => {
+  const rangeHeader = c.req.header("range");
+
+  // Generate presigned URL and fetch from RustFS
+  const presignedUrl = await getSignedUrl(
+    s3,
+    new GetObjectCommand({ Bucket: BUCKET_NAME, Key: "quran/mushaf.pdf" }),
+    { expiresIn: 3600 },
+  );
+
+  const fetchHeaders: HeadersInit = {};
+  if (rangeHeader) fetchHeaders["Range"] = rangeHeader;
+
+  const pdfRes = await fetch(presignedUrl, { headers: fetchHeaders });
+
+  const responseHeaders = new Headers();
+  responseHeaders.set("Content-Type", "application/pdf");
+  responseHeaders.set("Cache-Control", "public, max-age=86400, immutable");
+  responseHeaders.set("Accept-Ranges", "bytes");
+
+  const contentLength = pdfRes.headers.get("content-length");
+  if (contentLength) responseHeaders.set("Content-Length", contentLength);
+
+  const contentRange = pdfRes.headers.get("content-range");
+  if (contentRange) responseHeaders.set("Content-Range", contentRange);
+
+  return new Response(pdfRes.body as any, {
+    status: pdfRes.status,
+    headers: responseHeaders,
+  });
+});
+
 quranRoutes.openapi(getMushafPage, async (c) => {
   const { page } = c.req.valid("param");
 
