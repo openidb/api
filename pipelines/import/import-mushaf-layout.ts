@@ -1,10 +1,9 @@
 /**
  * Import mushaf word layout data into Postgres
  *
- * Reads the words-qul.json file scraped by scrape-qul-mushaf-layout.ts
- * and bulk inserts into the mushaf_words table.
- *
- * Also enriches words with textUthmani from the ayahs table.
+ * Merges two data sources:
+ * - words-v2.json (quran.com API): correct V2 glyph codes for word/end entries
+ * - words-qul.json (QUL scrape): correct surah_name + bismillah line positions
  *
  * Usage:
  *   bun run pipelines/import/import-mushaf-layout.ts [--force]
@@ -15,7 +14,8 @@ import { prisma } from "../../src/db";
 import { readFileSync } from "fs";
 import { join } from "path";
 
-const DATA_PATH = join(import.meta.dirname, "../../data/mushaf/words-qul.json");
+const V2_PATH = join(import.meta.dirname, "../../data/mushaf/words-v2.json");
+const QUL_PATH = join(import.meta.dirname, "../../data/mushaf/words-qul.json");
 
 interface MushafWordData {
   pageNumber: number;
@@ -33,10 +33,9 @@ interface MushafWordData {
 async function main() {
   const force = process.argv.includes("--force");
 
-  console.log("Mushaf Layout Import (QUL Resource 19)");
-  console.log("======================================");
+  console.log("Mushaf Layout Import (V2 glyphs + QUL layout)");
+  console.log("===============================================");
 
-  // Check existing count
   const existing = await prisma.mushafWord.count();
   if (existing > 0 && !force) {
     console.log(`Already have ${existing} mushaf words. Use --force to reimport.`);
@@ -49,21 +48,65 @@ async function main() {
     await prisma.mushafWord.deleteMany();
   }
 
-  console.log(`Reading ${DATA_PATH}...`);
-  const words: MushafWordData[] = JSON.parse(readFileSync(DATA_PATH, "utf-8"));
-  console.log(`Loaded ${words.length} words from JSON`);
+  // Load V2 word data (word + end entries with correct glyph codes)
+  console.log(`Reading V2 data from ${V2_PATH}...`);
+  const v2Words: MushafWordData[] = JSON.parse(readFileSync(V2_PATH, "utf-8"));
+  const textWords = v2Words.filter((w) => w.charTypeName === "word" || w.charTypeName === "end");
+  console.log(`  V2 text words: ${textWords.length}`);
+
+  // Load QUL data (surah_name + bismillah entries with correct line positions)
+  console.log(`Reading QUL data from ${QUL_PATH}...`);
+  const qulWords: MushafWordData[] = JSON.parse(readFileSync(QUL_PATH, "utf-8"));
+  const syntheticWords = qulWords.filter(
+    (w) => w.charTypeName === "surah_name" || w.charTypeName === "bismillah"
+  );
+  console.log(`  QUL surah headers: ${syntheticWords.filter((w) => w.charTypeName === "surah_name").length}`);
+  console.log(`  QUL bismillah: ${syntheticWords.filter((w) => w.charTypeName === "bismillah").length}`);
+
+  // Merge: text words from V2 + synthetic from QUL
+  const allWords = [...textWords, ...syntheticWords];
+
+  // Sort by page, line, then Quran order (surah, ayah, word position)
+  // NOTE: positionInLine from V2 data is per-ayah (resets at each ayah),
+  // so we MUST sort by surah/ayah/wordPosition to avoid interleaving
+  // words from different ayahs that share the same line.
+  allWords.sort(
+    (a, b) =>
+      a.pageNumber - b.pageNumber ||
+      a.lineNumber - b.lineNumber ||
+      a.surahNumber - b.surahNumber ||
+      a.ayahNumber - b.ayahNumber ||
+      a.wordPosition - b.wordPosition
+  );
+
+  // Renumber positionInLine sequentially per page/line
+  let prevPage = -1;
+  let prevLine = -1;
+  let seq = 0;
+
+  for (const w of allWords) {
+    if (w.pageNumber !== prevPage || w.lineNumber !== prevLine) {
+      seq = 0;
+      prevPage = w.pageNumber;
+      prevLine = w.lineNumber;
+    }
+    seq++;
+    w.positionInLine = seq;
+  }
+
+  console.log(`\nTotal words to import: ${allWords.length}`);
 
   // Batch insert
   const BATCH_SIZE = 5000;
   let imported = 0;
 
-  for (let i = 0; i < words.length; i += BATCH_SIZE) {
-    const batch = words.slice(i, i + BATCH_SIZE);
+  for (let i = 0; i < allWords.length; i += BATCH_SIZE) {
+    const batch = allWords.slice(i, i + BATCH_SIZE);
     const result = await prisma.mushafWord.createMany({
       data: batch.map((w) => ({
         pageNumber: w.pageNumber,
         lineNumber: w.lineNumber,
-        lineType: w.lineType,
+        lineType: w.lineType || w.charTypeName,
         positionInLine: w.positionInLine,
         charTypeName: w.charTypeName,
         surahNumber: w.surahNumber,
@@ -76,8 +119,8 @@ async function main() {
     });
     imported += result.count;
 
-    if ((i + BATCH_SIZE) % 20000 === 0 || i + BATCH_SIZE >= words.length) {
-      console.log(`  Progress: ${Math.min(i + BATCH_SIZE, words.length)}/${words.length} (${imported} inserted)`);
+    if ((i + BATCH_SIZE) % 20000 === 0 || i + BATCH_SIZE >= allWords.length) {
+      console.log(`  Progress: ${Math.min(i + BATCH_SIZE, allWords.length)}/${allWords.length} (${imported} inserted)`);
     }
   }
 
@@ -92,7 +135,6 @@ async function main() {
   console.log(`Total in DB: ${total}`);
   console.log(`Pages covered: ${pageCount.length}`);
 
-  // Line type stats
   const lineTypeStats = await prisma.mushafWord.groupBy({
     by: ["lineType"],
     _count: true,

@@ -216,6 +216,8 @@ Return a JSON array where each element has:
 
 Only include fields that were present in the input. Do not include the original Arabic or the field labels.
 
+Context: These hadiths are the recorded sayings and actions of the Prophet Muhammad ﷺ, the final Prophet and Messenger of Allah sent as a mercy to all of creation. His character was described by his wife Aisha (may Allah be pleased with her) as "the Quran" — he embodied its teachings — and Allah praised him saying "You are truly of outstanding character" (Quran 68:4).
+
 Guidelines:
 - Translate each field faithfully, preserving the meaning and tone.
 - Keep narrator names in standard transliterated forms (e.g. Abu Hurayrah, Ibn Abbas, Aisha).${isEnglish ? `

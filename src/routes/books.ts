@@ -1,10 +1,7 @@
 import { OpenAPIHono, createRoute } from "@hono/zod-openapi";
 import { z } from "@hono/zod-openapi";
 import { prisma } from "../db";
-import { callOpenRouter } from "../lib/openrouter";
-import { getInflight, setInflight, type TranslationResult } from "../lib/translation-tracker";
 import { generateBookReferenceUrl, generatePageReferenceUrl, SOURCES } from "../utils/source-urls";
-import { hashPageTranslation } from "../utils/content-hash";
 import { detectPdfStorage } from "../utils/pdf-storage";
 import { s3, BUCKET_NAME } from "../s3";
 import { GetObjectCommand } from "@aws-sdk/client-s3";
@@ -12,74 +9,24 @@ import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { ErrorResponse } from "../schemas/common";
 import {
   BookIdParam, BookPageParam,
-  BookListQuery, BookDetailQuery, BookPagesQuery, TranslateBody,
+  BookListQuery, BookDetailQuery, BookPagesQuery, PageTranslationQuery,
   BookListResponse, BookDetailResponse, PageDetailResponse, PageListResponse, TranslateResponse,
 } from "../schemas/books";
-import { searchBooksES } from "../search/elasticsearch-catalog";
+import { searchBooksES, getIndexedBookIds } from "../search/elasticsearch-catalog";
 
-const LANGUAGE_NAMES: Record<string, string> = {
-  en: "English", fr: "French", id: "Indonesian", ur: "Urdu",
-  es: "Spanish", zh: "Chinese", pt: "Portuguese", ru: "Russian",
-  ja: "Japanese", ko: "Korean", it: "Italian", bn: "Bengali",
-  ha: "Hausa", sw: "Swahili", nl: "Dutch", de: "German",
-  tr: "Turkish", fa: "Persian", hi: "Hindi", ms: "Malay",
-  pa: "Punjabi", ku: "Kurdish", ps: "Pashto", so: "Somali",
-  uz: "Uzbek", yo: "Yoruba", ta: "Tamil",
-};
+// Cached set of book IDs that have at least one PDF page (5-min TTL)
+let pdfBookIdsCache: { ids: Set<string>; expiry: number } | null = null;
 
-const MODEL_MAP: Record<string, string> = {
-  "gemini-flash": "google/gemini-3-flash-preview",
-  "gpt-oss-120b": "openai/gpt-oss-120b",
-};
-
-const ARABIC_REGEX = /[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]/;
-
-function isMeaningfulContent(text: string): boolean {
-  if (text.length < 2) return false;
-  if (!ARABIC_REGEX.test(text)) return false;
-  if (/^[\s\d\-–—_.*•·,،؛:;!?'"()[\]{}«»<>\/\\|@#$%^&+=~`]+$/.test(text)) return false;
-  return true;
-}
-
-function stripHtmlEntities(text: string): string {
-  return text
-    .replace(/<[^>]+>/g, "")
-    .replace(/&nbsp;/g, " ").replace(/&amp;/g, "&")
-    .replace(/&lt;/g, "<").replace(/&gt;/g, ">")
-    .replace(/&quot;/g, '"').replace(/&#39;/g, "'")
-    .replace(/\s+/g, " ").trim();
-}
-
-function extractParagraphs(html: string): { index: number; text: string }[] {
-  const paragraphs: { index: number; text: string }[] = [];
-
-  // Try <p> tag extraction first
-  const pRegex = /<p[^>]*>([\s\S]*?)<\/p>/gi;
-  let match;
-  let index = 0;
-  while ((match = pRegex.exec(html)) !== null) {
-    const text = stripHtmlEntities(match[1]);
-    if (isMeaningfulContent(text)) paragraphs.push({ index, text });
-    index++;
+export async function getPdfBookIds(): Promise<Set<string>> {
+  if (pdfBookIdsCache && Date.now() < pdfBookIdsCache.expiry) {
+    return pdfBookIdsCache.ids;
   }
-  if (paragraphs.length > 0) return paragraphs;
-
-  // Fallback: newline splitting (Turath raw text format)
-  // Join multi-line title spans into single lines (matches frontend formatContentHtml)
-  html = html.replace(
-    /<span\s+data-type=['"]title['"][^>]*>[\s\S]*?<\/span>/g,
-    (m) => m.replace(/\n/g, " ")
+  const rows = await prisma.$queryRawUnsafe<{ book_id: string }[]>(
+    `SELECT DISTINCT book_id FROM pages WHERE pdf_url IS NOT NULL AND pdf_url != ''`
   );
-  const lines = html.split(/\n/);
-  index = 0;
-  for (const line of lines) {
-    const text = stripHtmlEntities(line);
-    if (isMeaningfulContent(text)) {
-      paragraphs.push({ index, text });
-    }
-    index++;
-  }
-  return paragraphs;
+  const ids = new Set(rows.map((r) => r.book_id));
+  pdfBookIdsCache = { ids, expiry: Date.now() + 5 * 60 * 1000 };
+  return ids;
 }
 
 // --- Route definitions ---
@@ -116,33 +63,20 @@ const getBook = createRoute({
   },
 });
 
-const translatePage = createRoute({
-  method: "post",
-  path: "/{id}/pages/{page}/translate",
+const getPageTranslation = createRoute({
+  method: "get",
+  path: "/{id}/pages/{page}/translation",
   tags: ["Books"],
-  summary: "Translate page paragraphs",
-  request: {
-    params: BookPageParam,
-    body: {
-      content: { "application/json": { schema: TranslateBody } },
-    },
-  },
+  summary: "Get pre-existing page translation",
+  request: { params: BookPageParam, query: PageTranslationQuery },
   responses: {
     200: {
       content: { "application/json": { schema: TranslateResponse } },
       description: "Translated paragraphs",
     },
-    400: {
-      content: { "application/json": { schema: ErrorResponse } },
-      description: "Invalid request",
-    },
     404: {
       content: { "application/json": { schema: ErrorResponse } },
-      description: "Page not found",
-    },
-    502: {
-      content: { "application/json": { schema: ErrorResponse } },
-      description: "Translation service error",
+      description: "Translation not found",
     },
   },
 });
@@ -212,7 +146,7 @@ const getPagePdf = createRoute({
 export const booksRoutes = new OpenAPIHono();
 
 booksRoutes.openapi(listBooks, async (c) => {
-  const { limit, offset, search, authorId, categoryId, century, bookTitleLang } = c.req.valid("query");
+  const { limit, offset, search, authorId, categoryId, century, bookTitleLang, hasPdf, isIndexed, isTranslated } = c.req.valid("query");
 
   // Resolve century filter to author IDs (shared by both ES and ILIKE paths)
   let centuryAuthorIds: string[] | null = null;
@@ -291,6 +225,42 @@ booksRoutes.openapi(listBooks, async (c) => {
       params.push(ids);
       paramIdx++;
     }
+  }
+
+  // Feature filters
+  if (hasPdf === "true") {
+    const pdfIds = await getPdfBookIds();
+    if (pdfIds.size === 0) {
+      return c.json({ books: [], total: 0, limit, offset, _sources: [...SOURCES.turath] }, 200);
+    }
+    conditions.push(`b.id = ANY($${paramIdx})`);
+    params.push([...pdfIds]);
+    paramIdx++;
+  }
+
+  if (isIndexed === "true") {
+    const indexedIds = await getIndexedBookIds();
+    if (indexedIds !== null) {
+      if (indexedIds.size === 0) {
+        return c.json({ books: [], total: 0, limit, offset, _sources: [...SOURCES.turath] }, 200);
+      }
+      conditions.push(`b.id = ANY($${paramIdx})`);
+      params.push([...indexedIds]);
+      paramIdx++;
+    }
+    // If ES unavailable (null), skip filter silently
+  }
+
+  if (isTranslated === "true" && bookTitleLang && bookTitleLang !== "none" && bookTitleLang !== "transliteration") {
+    conditions.push(`b.id IN (
+      SELECT p.book_id FROM pages p
+      LEFT JOIN page_translations pt ON pt.page_id = p.id AND pt.language = $${paramIdx}
+      WHERE p.page_number > 0
+      GROUP BY p.book_id
+      HAVING COUNT(*) = COUNT(pt.id)
+    )`);
+    params.push(bookTitleLang);
+    paramIdx++;
   }
 
   const whereSQL = conditions.length > 0 ? `WHERE ${conditions.join(" AND ")}` : "";
@@ -376,7 +346,7 @@ booksRoutes.openapi(getBook, async (c) => {
   const { id } = c.req.valid("param");
   const { bookTitleLang } = c.req.valid("query");
 
-  const [book, lastPage, volumeStarts] = await Promise.all([
+  const [book, lastPage, volumeStarts, translatedLangs] = await Promise.all([
     prisma.book.findUnique({
       where: { id },
       select: {
@@ -436,6 +406,14 @@ booksRoutes.openapi(getBook, async (c) => {
       _min: { pageNumber: true },
       orderBy: { volumeNumber: "asc" },
     }),
+    prisma.$queryRawUnsafe<{ language: string }[]>(
+      `SELECT pt.language FROM page_translations pt
+       JOIN pages p ON pt.page_id = p.id
+       WHERE p.book_id = $1 AND p.page_number > 0
+       GROUP BY pt.language
+       HAVING COUNT(DISTINCT p.id) = (SELECT COUNT(*) FROM pages WHERE book_id = $1 AND page_number > 0)`,
+      id,
+    ),
   ]);
 
   if (!book) {
@@ -460,474 +438,39 @@ booksRoutes.openapi(getBook, async (c) => {
       displayDate: rest.author?.deathDateHijri || rest.publicationYearHijri || null,
       displayDateType: rest.author?.deathDateHijri ? "death" : rest.publicationYearHijri ? "publication" : null,
       referenceUrl: generateBookReferenceUrl(rest.id),
+      ...(translatedLangs.length > 0 ? { translatedLanguages: translatedLangs.map((r) => r.language) } : {}),
     },
     _sources: [...SOURCES.turath],
   }, 200);
 });
 
-/** Normalize Arabic text for fuzzy matching (strip tashkeel, normalize letter forms). */
-function normalizeForMatching(text: string): string {
-  return text
-    .replace(/[\u0610-\u061A\u064B-\u065F\u0670\u06D6-\u06ED]/g, "")
-    .replace(/[أإآٱ]/g, "ا")
-    .replace(/ة/g, "ه")
-    .replace(/ى/g, "ي")
-    .replace(/\s+/g, " ")
-    .trim();
-}
-
-interface HadithOnPage {
-  bookId: number;
-  hadithNumber: string;
-  textArabic: string;
-  isnad: string | null;
-  matn: string | null;
-  footnotes: string | null;
-  kitabArabic: string | null;
-  chapterArabic: string | null;
-  gradeExplanation: string | null;
-}
-
-/** Hadith-aware translation: reuses HadithTranslation for hadith content, generic LLM for the rest. */
-async function performHadithAwareTranslation(
-  page: { id: number; contentHtml: string; bookId: string; pageNumber: number },
-  hadithsOnPage: HadithOnPage[],
-  lang: string,
-  modelKey: string,
-): Promise<TranslationResult> {
-  const model = MODEL_MAP[modelKey] || MODEL_MAP["gemini-flash"];
-  const targetLanguage = LANGUAGE_NAMES[lang]!;
-  const paragraphs = extractParagraphs(page.contentHtml);
-
-  if (paragraphs.length === 0) {
-    return { paragraphs: [], contentHash: "", model };
-  }
-
-  // Build normalized index for paragraph-to-hadith matching
-  const normalizedHadiths = hadithsOnPage.map((h) => ({
-    ...h,
-    _normText: normalizeForMatching(h.textArabic),
-  }));
-
-  // Match each paragraph to a hadith by checking if its normalized prefix appears in hadith textArabic.
-  // We only match against the full textArabic (not isnad/matn separately) to avoid partial matches
-  // where a single paragraph contains the full hadith but gets classified as "isnad-only".
-  const paragraphMatches = paragraphs.map((p) => {
-    const normPara = normalizeForMatching(p.text);
-    if (normPara.length < 15) return { paragraph: p, hadith: null as HadithOnPage | null };
-
-    const prefix = normPara.slice(0, Math.min(40, normPara.length));
-
-    for (const h of normalizedHadiths) {
-      if (h._normText.includes(prefix)) {
-        return { paragraph: p, hadith: h as HadithOnPage };
-      }
-    }
-
-    return { paragraph: p, hadith: null as HadithOnPage | null };
-  });
-
-  // Collect unique matched hadiths
-  const matchedHadithMap = new Map<string, HadithOnPage>();
-  for (const m of paragraphMatches) {
-    if (m.hadith) matchedHadithMap.set(`${m.hadith.bookId}-${m.hadith.hadithNumber}`, m.hadith);
-  }
-  const matchedHadiths = [...matchedHadithMap.values()];
-
-  // Fetch existing HadithTranslation entries
-  interface HadithTransRecord {
-    bookId: number;
-    hadithNumber: string;
-    text: string;
-    isnadTranslation: string | null;
-    matnTranslation: string | null;
-    footnotesTranslation: string | null;
-    kitabTranslation: string | null;
-    chapterTranslation: string | null;
-    gradeExplanationTranslation: string | null;
-  }
-
-  const existingTranslations: HadithTransRecord[] = matchedHadiths.length > 0
-    ? await prisma.hadithTranslation.findMany({
-        where: {
-          language: lang,
-          OR: matchedHadiths.map((h) => ({ bookId: h.bookId, hadithNumber: h.hadithNumber })),
-        },
-        select: {
-          bookId: true, hadithNumber: true, text: true,
-          isnadTranslation: true, matnTranslation: true, footnotesTranslation: true,
-          kitabTranslation: true, chapterTranslation: true, gradeExplanationTranslation: true,
-        },
-      })
-    : [];
-
-  const hadithTranslationMap = new Map<string, HadithTransRecord>(
-    existingTranslations.map((t) => [`${t.bookId}-${t.hadithNumber}`, t])
-  );
-
-  // Translate missing hadiths via LLM
-  const toTranslateHadiths = matchedHadiths.filter((h) => !hadithTranslationMap.has(`${h.bookId}-${h.hadithNumber}`));
-
-  if (toTranslateHadiths.length > 0) {
-    const isEnglish = lang === "en";
-    const numberedInputs = toTranslateHadiths
-      .map((h, i) => {
-        const parts: string[] = [`[${i}]`];
-        if (h.isnad) parts.push(`ISNAD: ${h.isnad}`);
-        if (h.matn) parts.push(`MATN: ${h.matn}`);
-        if (!h.isnad && !h.matn) parts.push(`MATN: ${h.textArabic}`);
-        if (h.footnotes) parts.push(`FOOTNOTES: ${h.footnotes}`);
-        if (h.kitabArabic) parts.push(`KITAB: ${h.kitabArabic}`);
-        if (h.chapterArabic) parts.push(`CHAPTER: ${h.chapterArabic}`);
-        if (h.gradeExplanation) parts.push(`GRADE_EXPLANATION: ${h.gradeExplanation}`);
-        return parts.join("\n");
-      })
-      .join("\n\n");
-
-    const hadithPrompt = `Translate the following Arabic hadith fields to ${targetLanguage}.
-Each hadith is numbered with [N] and has labeled fields (ISNAD, MATN, FOOTNOTES, KITAB, CHAPTER, GRADE_EXPLANATION).
-Return a JSON array where each element has:
-- "index": the hadith number [N]
-- "isnad": translated chain of narrators (if ISNAD was provided)
-- "matn": translated hadith body text (if MATN was provided)
-- "footnotes": translated scholarly footnotes (if FOOTNOTES was provided)
-- "kitab": translated book/section heading (if KITAB was provided)
-- "chapter": translated chapter heading (if CHAPTER was provided)
-- "gradeExplanation": translated grade reasoning (if GRADE_EXPLANATION was provided)
-
-Only include fields that were present in the input.
-
-Guidelines:
-- Translate each field faithfully.
-- Keep narrator names in standard transliterated forms.${isEnglish ? `
-- "حدثنا" / "أخبرنا" → "narrated to us" / "informed us"
-- "عن" → "from" or "on the authority of"` : `
-- Use conventional ${targetLanguage} hadith narration terms.`}
-- Keep "Allah" as-is. Keep Islamic terms in transliterated or conventional ${targetLanguage} forms.
-- Use ﷺ for "صلى الله عليه وسلم".
-
-Arabic hadiths:
-${numberedInputs}
-
-Respond with ONLY a valid JSON array.`;
-
-    try {
-      const llmModel = MODEL_MAP[modelKey] || MODEL_MAP["gemini-flash"];
-      const llmResult = await callOpenRouter({
-        model: llmModel,
-        messages: [{ role: "user", content: hadithPrompt }],
-        temperature: 0.3,
-        timeoutMs: 60_000,
-      });
-
-      if (llmResult) {
-        let cleaned = llmResult.content.trim();
-        if (cleaned.startsWith("```json")) cleaned = cleaned.slice(7);
-        else if (cleaned.startsWith("```")) cleaned = cleaned.slice(3);
-        if (cleaned.endsWith("```")) cleaned = cleaned.slice(0, -3);
-
-        const parsed = JSON.parse(cleaned.trim());
-        if (Array.isArray(parsed)) {
-          for (const item of parsed.slice(0, toTranslateHadiths.length)) {
-            if (typeof item?.index !== "number" || !Number.isFinite(item.index)) continue;
-            const hadith = toTranslateHadiths[item.index];
-            if (!hadith) continue;
-
-            const isnadT = typeof item.isnad === "string" ? item.isnad : null;
-            const matnT = typeof item.matn === "string" ? item.matn : null;
-            const footnotesT = typeof item.footnotes === "string" ? item.footnotes : null;
-            const kitabT = typeof item.kitab === "string" ? item.kitab : null;
-            const chapterT = typeof item.chapter === "string" ? item.chapter : null;
-            const gradeExplanationT = typeof item.gradeExplanation === "string" ? item.gradeExplanation : null;
-            const composedText = [isnadT, matnT].filter(Boolean).join(" ");
-
-            const key = `${hadith.bookId}-${hadith.hadithNumber}`;
-            hadithTranslationMap.set(key, {
-              bookId: hadith.bookId,
-              hadithNumber: hadith.hadithNumber,
-              text: composedText,
-              isnadTranslation: isnadT,
-              matnTranslation: matnT,
-              footnotesTranslation: footnotesT,
-              kitabTranslation: kitabT,
-              chapterTranslation: chapterT,
-              gradeExplanationTranslation: gradeExplanationT,
-            });
-
-            // Persist to HadithTranslation table
-            try {
-              await prisma.hadithTranslation.upsert({
-                where: {
-                  bookId_hadithNumber_language: {
-                    bookId: hadith.bookId,
-                    hadithNumber: hadith.hadithNumber,
-                    language: lang,
-                  },
-                },
-                update: {
-                  text: composedText, source: "llm", model: modelKey,
-                  isnadTranslation: isnadT, matnTranslation: matnT, footnotesTranslation: footnotesT,
-                  kitabTranslation: kitabT, chapterTranslation: chapterT, gradeExplanationTranslation: gradeExplanationT,
-                },
-                create: {
-                  bookId: hadith.bookId, hadithNumber: hadith.hadithNumber, language: lang,
-                  text: composedText, source: "llm", model: modelKey,
-                  isnadTranslation: isnadT, matnTranslation: matnT, footnotesTranslation: footnotesT,
-                  kitabTranslation: kitabT, chapterTranslation: chapterT, gradeExplanationTranslation: gradeExplanationT,
-                },
-              });
-            } catch (err) {
-              console.error(`[hadith-page-translate] Failed to persist for ${key}:`, err);
-            }
-          }
-        }
-      }
-    } catch (err) {
-      console.error("[hadith-page-translate] Hadith LLM call failed:", err);
-    }
-  }
-
-  // Build paragraph translations from hadith translations + generic translation for non-hadith content.
-  // Each hadith's full composed translation is emitted once for the first matching paragraph;
-  // subsequent paragraphs of the same hadith are skipped (the full text is already covered).
-  const translations: { index: number; translation: string }[] = [];
-  const unmatchedParagraphs: { index: number; text: string }[] = [];
-  const usedHadiths = new Set<string>();
-
-  for (const match of paragraphMatches) {
-    if (match.hadith) {
-      const key = `${match.hadith.bookId}-${match.hadith.hadithNumber}`;
-
-      // Skip if this hadith's translation was already emitted for a previous paragraph
-      if (usedHadiths.has(key)) continue;
-      usedHadiths.add(key);
-
-      const t = hadithTranslationMap.get(key);
-      if (t) {
-        const translatedText = [t.isnadTranslation, t.matnTranslation].filter(Boolean).join(" ") || t.text;
-        translations.push({ index: match.paragraph.index, translation: translatedText });
-      } else {
-        unmatchedParagraphs.push(match.paragraph);
-      }
-    } else {
-      unmatchedParagraphs.push(match.paragraph);
-    }
-  }
-
-  // Translate remaining unmatched paragraphs (headings, etc.) with generic LLM
-  if (unmatchedParagraphs.length > 0) {
-    const numberedParagraphs = unmatchedParagraphs.map((p) => `[${p.index}] ${p.text}`).join("\n\n");
-
-    const genericPrompt = `Translate the following Arabic paragraphs to ${targetLanguage}.
-Each paragraph is numbered with [N]. Return a JSON array where each element has "index" (the paragraph number) and "translation" (the translated text).
-Only translate the text content - do not include the original Arabic or the [N] markers.
-
-IMPORTANT — Preserve Islamic terminology in their conventional transliterated forms:
-- "الله" → "Allah", "محمد" → "Muhammad", "القرآن" → "Quran"
-- Keep Salah, Zakat, Hajj, Sunnah, Hadith, Fiqh, Tafsir, etc.
-- Use ﷺ for "صلى الله عليه وسلم".
-
-Arabic paragraphs:
-${numberedParagraphs}
-
-Respond with ONLY a valid JSON array. Example:
-[{"index": 0, "translation": "..."}, {"index": 1, "translation": "..."}]`;
-
-    try {
-      const llmModel = MODEL_MAP[modelKey] || MODEL_MAP["gemini-flash"];
-      const llmResult = await callOpenRouter({
-        model: llmModel,
-        messages: [{ role: "user", content: genericPrompt }],
-        temperature: 0.3,
-        timeoutMs: 30_000,
-      });
-
-      if (llmResult) {
-        let cleaned = llmResult.content.trim();
-        if (cleaned.startsWith("```json")) cleaned = cleaned.slice(7);
-        else if (cleaned.startsWith("```")) cleaned = cleaned.slice(3);
-        if (cleaned.endsWith("```")) cleaned = cleaned.slice(0, -3);
-
-        const parsed = JSON.parse(cleaned.trim());
-        if (Array.isArray(parsed)) {
-          for (const item of parsed) {
-            if (typeof item?.index === "number" && typeof item?.translation === "string") {
-              translations.push({ index: item.index, translation: item.translation.slice(0, 5000) });
-            }
-          }
-        }
-      }
-    } catch (err) {
-      console.error("[hadith-page-translate] Generic translation failed:", err);
-    }
-  }
-
-  // Sort by paragraph index
-  translations.sort((a, b) => a.index - b.index);
-
-  if (translations.length === 0) {
-    throw new Error("Failed to produce any translations");
-  }
-
-  // Save PageTranslation for cache consistency
-  const contentHash = hashPageTranslation(page.bookId, page.pageNumber, lang, translations);
-  await prisma.pageTranslation.upsert({
-    where: { pageId_language: { pageId: page.id, language: lang } },
-    update: { model: modelKey, paragraphs: translations, contentHash },
-    create: { pageId: page.id, language: lang, model: modelKey, paragraphs: translations, contentHash },
-  });
-
-  return { paragraphs: translations, contentHash, model };
-}
-
-/** Run LLM translation for a page and save to DB. Standalone — no Hono context dependency. */
-async function performTranslation(
-  page: { id: number; contentHtml: string; bookId: string; pageNumber: number },
-  lang: string,
-  modelKey: string,
-): Promise<TranslationResult> {
-  const model = MODEL_MAP[modelKey] || MODEL_MAP["gemini-flash"];
-  const targetLanguage = LANGUAGE_NAMES[lang]!;
-
-  const paragraphs = extractParagraphs(page.contentHtml);
-  if (paragraphs.length === 0) {
-    return { paragraphs: [], contentHash: "", model };
-  }
-
-  const numberedParagraphs = paragraphs.map((p) => `[${p.index}] ${p.text}`).join("\n\n");
-
-  const prompt = `Translate the following Arabic paragraphs to ${targetLanguage}.
-Each paragraph is numbered with [N]. Return a JSON array where each element has "index" (the paragraph number) and "translation" (the translated text).
-Only translate the text content - do not include the original Arabic or the [N] markers in the translation.
-Preserve the meaning and tone of the original text.
-
-IMPORTANT — Use the FULL PAGE as context when translating each paragraph. All paragraphs come from the same page of an Islamic scholarly text. If a word or phrase is ambiguous, use the surrounding paragraphs to disambiguate and determine the correct meaning. Always prefer the interpretation that is consistent with the rest of the page.
-
-IMPORTANT — Preserve Islamic terminology in their conventional English/transliterated forms:
-- Surah names: keep the standard transliteration (e.g. al-Baqarah, al-Qasas, al-Anfal, Yasin) — do NOT translate surah names into their literal meanings
-- "الله" → "Allah" (not "God")
-- "محمد" → "Muhammad" or "the Prophet Muhammad"
-- "القرآن" → "Quran" (not "the holy book")
-- "الرسول" → "the Messenger" or "the Prophet"
-- "صلى الله عليه وسلم" → "peace be upon him" or "ﷺ"
-- Other Islamic terms like: Salah, Zakat, Hajj, Iman, Taqwa, Sunnah, Hadith, Fiqh, Tafsir, Ijma, Qiyas, etc.
-
-Arabic paragraphs:
-${numberedParagraphs}
-
-Respond with ONLY a valid JSON array, no other text. Example format:
-[{"index": 0, "translation": "First paragraph translation"}, {"index": 1, "translation": "Second paragraph translation"}]`;
-
-  const result = await callOpenRouter({ model, messages: [{ role: "user", content: prompt }], temperature: 0.3, timeoutMs: 30000 });
-  if (!result) {
-    throw new Error("Translation service unavailable");
-  }
-
-  let translations: { index: number; translation: string }[] = [];
-  let cleaned = result.content.trim();
-  if (cleaned.startsWith("```json")) cleaned = cleaned.slice(7);
-  else if (cleaned.startsWith("```")) cleaned = cleaned.slice(3);
-  if (cleaned.endsWith("```")) cleaned = cleaned.slice(0, -3);
-  const parsed = JSON.parse(cleaned.trim());
-  if (!Array.isArray(parsed)) {
-    throw new Error("Failed to parse translation");
-  }
-  for (const item of parsed.slice(0, paragraphs.length)) {
-    if (
-      typeof item?.index === "number" && Number.isFinite(item.index) &&
-      typeof item?.translation === "string"
-    ) {
-      translations.push({ index: item.index, translation: item.translation.slice(0, 5000) });
-    }
-  }
-  if (translations.length === 0) {
-    throw new Error("Failed to parse translation");
-  }
-
-  const contentHash = hashPageTranslation(page.bookId, page.pageNumber, lang, translations);
-  await prisma.pageTranslation.upsert({
-    where: { pageId_language: { pageId: page.id, language: lang } },
-    update: { model: modelKey, paragraphs: translations, contentHash },
-    create: { pageId: page.id, language: lang, model: modelKey, paragraphs: translations, contentHash },
-  });
-
-  return { paragraphs: translations, contentHash, model };
-}
-
-booksRoutes.openapi(translatePage, async (c) => {
+booksRoutes.openapi(getPageTranslation, async (c) => {
   const { id: bookId, page: pageNumber } = c.req.valid("param");
-  const { lang, model: modelKey } = c.req.valid("json");
-
-  if (!LANGUAGE_NAMES[lang]) {
-    return c.json({ error: "Unsupported language" }, 400);
-  }
+  const { lang } = c.req.valid("query");
 
   const page = await prisma.page.findUnique({
     where: { bookId_pageNumber: { bookId, pageNumber } },
-    select: { id: true, contentHtml: true, bookId: true, pageNumber: true },
+    select: { id: true },
   });
 
   if (!page) {
     return c.json({ error: "Page not found" }, 404);
   }
 
-  // Check DB cache
-  const existing = await prisma.pageTranslation.findUnique({
+  const translation = await prisma.pageTranslation.findUnique({
     where: { pageId_language: { pageId: page.id, language: lang } },
-    select: { paragraphs: true, contentHash: true, model: true },
-  });
-  if (existing) {
-    const cachedModel = MODEL_MAP[existing.model ?? ""] ?? existing.model ?? "unknown";
-    return c.json({
-      paragraphs: existing.paragraphs as any,
-      contentHash: existing.contentHash,
-      cached: true,
-      _sources: [{ name: `LLM Translation (${cachedModel})`, url: "https://openrouter.ai", type: "llm" }],
-    }, 200);
-  }
-
-  // Check if hadiths exist on this page (hadith-aware translation path)
-  const hadithsOnPage = await prisma.hadith.findMany({
-    where: { sourceBookId: bookId, sourcePageStart: pageNumber },
-    select: {
-      bookId: true, hadithNumber: true, textArabic: true,
-      isnad: true, matn: true, footnotes: true,
-      kitabArabic: true, chapterArabic: true, gradeExplanation: true,
-    },
+    select: { paragraphs: true, contentHash: true },
   });
 
-  const trackerKey = `${page.id}:${lang}`;
-
-  try {
-    // Check for an in-flight translation (deduplication)
-    let translationPromise = getInflight(trackerKey);
-    if (!translationPromise) {
-      if (hadithsOnPage.length > 0) {
-        // Hadith book page: reuse HadithTranslation + translate non-hadith content separately
-        translationPromise = performHadithAwareTranslation(page, hadithsOnPage, lang, modelKey);
-      } else {
-        // Regular book page: generic paragraph translation
-        translationPromise = performTranslation(page, lang, modelKey);
-      }
-      setInflight(trackerKey, translationPromise);
-    }
-
-    const result = await translationPromise;
-
-    if (result.paragraphs.length === 0) {
-      return c.json({ paragraphs: [] }, 200);
-    }
-
-    return c.json({
-      paragraphs: result.paragraphs,
-      contentHash: result.contentHash,
-      cached: false,
-      _sources: [{ name: `LLM Translation (${result.model})`, url: "https://openrouter.ai", type: "llm" }],
-    }, 200);
-  } catch (err) {
-    console.error("[translate-page]", err);
-    return c.json({ error: "Translation service unavailable" }, 502);
+  if (!translation) {
+    return c.json({ error: "Translation not found" }, 404);
   }
+
+  c.header("Cache-Control", "public, max-age=86400, stale-while-revalidate=86400, immutable");
+  return c.json({
+    paragraphs: translation.paragraphs as { index: number; translation: string }[],
+    contentHash: translation.contentHash,
+  }, 200);
 });
 
 booksRoutes.openapi(getPage, async (c) => {

@@ -2,7 +2,8 @@ import { OpenAPIHono, createRoute } from "@hono/zod-openapi";
 import { readFile, stat } from "fs/promises";
 import { join } from "path";
 import { GetObjectCommand } from "@aws-sdk/client-s3";
-import s3 from "../s3";
+import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
+import s3, { BUCKET_NAME } from "../s3";
 import { prisma } from "../db";
 import { generateQuranUrl, generateTafsirSourceUrl, generateTranslationSourceUrl, SOURCES } from "../utils/source-urls";
 import { audioFilePath, getAudioBasePath } from "../utils/audio-storage";
@@ -577,6 +578,16 @@ quranRoutes.openapi(getSegments, async (c) => {
 
 // --- Mushaf Page ---
 
+// --- Mushaf PDF presigned URL (must be registered before /mushaf/{page}) ---
+
+quranRoutes.get("/mushaf/pdf", async (c) => {
+  const expiresIn = 3600;
+  const command = new GetObjectCommand({ Bucket: BUCKET_NAME, Key: "quran/mushaf.pdf" });
+  const url = await getSignedUrl(s3, command, { expiresIn });
+  c.header("Cache-Control", "public, max-age=3000");
+  return c.json({ url, expiresIn });
+});
+
 quranRoutes.openapi(getMushafPage, async (c) => {
   const { page } = c.req.valid("param");
 
@@ -668,3 +679,4 @@ quranRoutes.openapi(getMushafPage, async (c) => {
   c.header("Cache-Control", "public, max-age=86400, immutable");
   return c.json(response, 200);
 });
+
