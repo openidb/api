@@ -567,12 +567,22 @@ booksRoutes.openapi(getPagePdf, async (c) => {
   }
 
   if (storage.type === "external") {
-    return c.json({ url: storage.url, type: "external" as const, _sources: [...SOURCES.turath] }, 200);
+    return c.redirect(storage.url, 302);
   }
 
-  const expiresIn = 3600;
+  // Stream PDF from RustFS through the API (presigned URLs use internal hostnames)
   const command = new GetObjectCommand({ Bucket: BUCKET_NAME, Key: storage.key });
-  const url = await getSignedUrl(s3, command, { expiresIn });
+  const presignedUrl = await getSignedUrl(s3, command, { expiresIn: 3600 });
+  const pdfRes = await fetch(presignedUrl);
 
-  return c.json({ url, type: "rustfs" as const, expiresIn, _sources: [...SOURCES.turath] }, 200);
+  if (!pdfRes.ok || !pdfRes.body) {
+    return c.json({ error: "PDF not found in storage" }, 404);
+  }
+
+  c.header("Content-Type", "application/pdf");
+  c.header("Cache-Control", "public, max-age=86400, immutable");
+  const contentLength = pdfRes.headers.get("content-length");
+  if (contentLength) c.header("Content-Length", contentLength);
+
+  return new Response(pdfRes.body as any, { status: 200 });
 });
