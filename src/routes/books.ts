@@ -579,10 +579,12 @@ booksRoutes.openapi(getPagePdf, async (c) => {
     return c.json({ error: "PDF not found in storage" }, 404);
   }
 
-  c.header("Content-Type", "application/pdf");
-  c.header("Cache-Control", "public, max-age=86400, immutable");
+  const headers: Record<string, string> = {
+    "Content-Type": "application/pdf",
+    "Cache-Control": "public, max-age=86400, immutable",
+  };
   const contentLength = pdfRes.headers.get("content-length");
-  if (contentLength) c.header("Content-Length", contentLength);
+  if (contentLength) headers["Content-Length"] = contentLength;
 
-  return new Response(pdfRes.body as any, { status: 200 });
+  return new Response(pdfRes.body as any, { status: 200, headers });
 });
