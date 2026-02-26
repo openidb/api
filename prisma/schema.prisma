@@ -605,6 +605,30 @@ model ArabicRoot {
 }
 
 // ============================================================================
+// API USAGE TRACKING
+// ============================================================================
+
+/// Per-request API usage log for operational dashboards.
+/// 1 row per HTTP request. Fire-and-forget insert from middleware.
+model ApiRequest {
+  id         String   @id @default(uuid())
+  method     String   @db.VarChar(10)  // "GET", "POST", etc.
+  path       String   @db.VarChar(500) // "/api/search", "/api/quran/surahs/1"
+  routePath  String?  @map("route_path") @db.VarChar(500) // Pattern: "/api/books/:id/pages/:page"
+  statusCode Int      @map("status_code")
+  durationMs Int      @map("duration_ms")
+  clientIp   String?  @map("client_ip") @db.VarChar(45)  // IPv4 or IPv6
+  userAgent  String?  @map("user_agent") @db.VarChar(500)
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  @@index([createdAt])
+  @@index([path])
+  @@index([routePath])
+  @@index([statusCode])
+  @@map("api_requests")
+}
+
+// ============================================================================
 // SEARCH ANALYTICS
 // ============================================================================
 

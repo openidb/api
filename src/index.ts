@@ -13,12 +13,14 @@ import { centuriesRoutes } from "./routes/centuries";
 import { searchRoutes } from "./routes/search";
 import { transcribeRoutes } from "./routes/transcribe";
 import { statsRoutes } from "./routes/stats";
+import { usageRoutes } from "./routes/usage";
 import { dictionaryRoutes } from "./routes/dictionary";
 import { bookEventRoutes } from "./routes/book-events";
 import { bookFeaturesRoutes } from "./routes/book-features";
 import { apiRateLimit, searchRateLimit, expensiveRateLimit } from "./middleware/rate-limit";
 import { timeout } from "./middleware/timeout";
 import { requestLogger } from "./middleware/request-logger";
+import { usageTracker } from "./middleware/usage-tracker";
 import { internalAuth } from "./middleware/internal-auth";
 import { prisma } from "./db";
 import { qdrant } from "./qdrant";
@@ -72,6 +74,9 @@ app.use("/api/*", timeout(30_000));
 // Request logging
 app.use("/api/*", requestLogger);
 
+// API usage tracking (fire-and-forget to Postgres)
+app.use("/api/*", usageTracker);
+
 // General rate limit for all API endpoints (120 req/min)
 app.use("/api/*", apiRateLimit);
 
@@ -98,6 +103,7 @@ app.route("/api/books/features", bookFeaturesRoutes);
 app.route("/api/books", booksRoutes);
 app.route("/api/transcribe", transcribeRoutes);
 app.route("/api/stats", statsRoutes);
+app.route("/api/stats/usage", usageRoutes);
 app.route("/api/dictionary", dictionaryRoutes);
 
 // Health check — pings Postgres, Qdrant, Elasticsearch, and S3 (RustFS)
