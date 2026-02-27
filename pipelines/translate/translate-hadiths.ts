@@ -300,6 +300,7 @@ async function persistResults(
         }
       } else {
         splitNotFound++;
+        console.warn(`    [split miss] #${hadith.hadithNumber}: matnStart="${r.matnStart.slice(0, 60)}" not found in text`);
       }
     } else {
       noSplitApplicable++;
