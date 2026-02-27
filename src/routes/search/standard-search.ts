@@ -8,7 +8,7 @@ import {
   keywordSearchHadithsES,
   keywordSearchAyahsES,
 } from "../../search/elasticsearch-search";
-import { STANDARD_FETCH_LIMIT, DEFAULT_AYAH_LIMIT, DEFAULT_HADITH_LIMIT, EXCLUDED_HADITH_COLLECTIONS } from "./config";
+import { STANDARD_FETCH_LIMIT, DEFAULT_AYAH_LIMIT, DEFAULT_HADITH_LIMIT, EXCLUDED_HADITH_COLLECTIONS, BM25_NORM_K } from "./config";
 import { shouldSkipSemanticSearch, getSearchStrategy } from "./query-utils";
 import { mergeWithRRF, mergeWithRRFGeneric } from "./fusion";
 import { semanticSearch, searchAyahsSemantic, searchHadithsSemantic } from "./engines";
@@ -175,7 +175,7 @@ export async function executeStandardSearch(params: SearchParams): Promise<Stand
     include: !bookId && includeQuran, mode, limit: ayahLimit,
     keywordResults: keywordAyahsResults, semanticResults: semanticAyahsResults,
     merge: () => mergeWithRRFGeneric(semanticAyahsResults, keywordAyahsResults, (a) => `${a.surahNumber}-${a.ayahNumber}`, query),
-    normalizeKeyword: (items) => items.map(a => ({ ...a, score: normalizeBM25Score(a.bm25Score ?? a.score ?? 0) })),
+    normalizeKeyword: (items) => items.map(a => ({ ...a, score: normalizeBM25Score(a.bm25Score ?? a.score ?? 0, BM25_NORM_K) })),
   });
 
   // Filter excluded collections unless user explicitly requested specific ones
@@ -187,7 +187,7 @@ export async function executeStandardSearch(params: SearchParams): Promise<Stand
     include: !bookId && includeHadith, mode, limit: hadithLimit,
     keywordResults: filterExcluded(keywordHadithsResults), semanticResults: filterExcluded(semanticHadithsResults),
     merge: () => filterExcluded(mergeWithRRFGeneric(semanticHadithsResults, keywordHadithsResults, (h) => `${h.collectionSlug}-${h.hadithNumber}`, query)),
-    normalizeKeyword: (items) => items.map(h => ({ ...h, score: normalizeBM25Score(h.bm25Score ?? h.score ?? 0) })),
+    normalizeKeyword: (items) => items.map(h => ({ ...h, score: normalizeBM25Score(h.bm25Score ?? h.score ?? 0, BM25_NORM_K) })),
   });
 
   timing.merge = mergeTimer();

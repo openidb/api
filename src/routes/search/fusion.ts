@@ -1,5 +1,7 @@
 import { normalizeBM25Score } from "../../search/bm25";
-import { RRF_K, SEMANTIC_WEIGHT, KEYWORD_WEIGHT, FLOAT_TOLERANCE } from "./config";
+import {
+  RRF_K, SEMANTIC_WEIGHT, KEYWORD_WEIGHT, FLOAT_TOLERANCE, BM25_NORM_K,
+} from "./config";
 import type { RankedResult, AyahRankedResult, HadithRankedResult } from "./types";
 
 /**
@@ -13,20 +15,22 @@ export function calculateRRFScore(ranks: (number | undefined)[]): number {
 }
 
 /**
- * Calculate fused score from semantic and keyword signals
+ * Calculate fused score from semantic and keyword signals.
+ * Keyword search only runs for Arabic queries, so weights are tuned for
+ * Arabic text where BM25 exact matching is highly reliable.
  */
 function calculateFusedScore(
   hasSemantic: boolean,
   hasKeyword: boolean,
   semanticScore: number,
   bm25Score: number | undefined,
-  keywordScore: number | undefined
+  keywordScore: number | undefined,
 ): number {
   if (hasSemantic && hasKeyword) {
-    return SEMANTIC_WEIGHT * semanticScore + KEYWORD_WEIGHT * normalizeBM25Score(bm25Score ?? 0);
+    return SEMANTIC_WEIGHT * semanticScore + KEYWORD_WEIGHT * normalizeBM25Score(bm25Score ?? 0, BM25_NORM_K);
   }
   if (hasSemantic) return semanticScore;
-  return normalizeBM25Score(bm25Score ?? keywordScore ?? 0);
+  return normalizeBM25Score(bm25Score ?? keywordScore ?? 0, BM25_NORM_K);
 }
 
 /**
@@ -72,7 +76,7 @@ export function mergeWithRRFGeneric<T extends { semanticRank?: number; keywordRa
       item.keywordRank !== undefined,
       item.semanticScore ?? 0,
       item.bm25Score,
-      item.keywordScore
+      item.keywordScore,
     );
     const rrfScore = calculateRRFScore([item.semanticRank, item.keywordRank]);
 

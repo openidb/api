@@ -737,21 +737,6 @@ export const COLLECTIONS: Record<string, CollectionConfig> = {
     hasChainVariants: true,
     stripTrailingHeadings: true,
   },
-  suyuti: {
-    ...defaultConfig,
-    slug: "suyuti",
-    bookId: "127677",
-    name: "Jam' al-Jawami' (Suyuti)",
-    nameArabic: "جمع الجوامع (الجامع الكبير)",
-    cacheDir: makeCacheDir("suyuti"),
-    hasChainVariants: true,
-    babStyle: "none",
-    isnadDelimiter: "double-quotes",
-    numberingStyle: "dual",
-    kitabRanges: [
-      { start: 1, end: 50000, name: "جمع الجوامع" },
-    ],
-  },
 };
 
 export function getConfig(slug: string): CollectionConfig {
@@ -779,7 +764,7 @@ export const PHASE_3 = ["nawawi40", "qudsi40", "hisn"];
 /** Phase 4: HadithUnlocked large collections */
 export const PHASE_4 = [
   "ahmad-zuhd", "mustadrak", "ibn-hibban", "mujam-kabir",
-  "sunan-kubra-bayhaqi", "sunan-kubra-nasai", "suyuti",
+  "sunan-kubra-bayhaqi", "sunan-kubra-nasai",
 ];
 
 /** All remaining collections (excludes bukhari and muslim) */

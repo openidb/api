@@ -2,9 +2,12 @@
 export const RRF_K = 60;
 
 // Weighted fusion: combine semantic and keyword scores
-// Max fused score = 0.8 + 0.3 = 1.1 (rewards results found by both methods)
-export const SEMANTIC_WEIGHT = 0.8;
-export const KEYWORD_WEIGHT = 0.3;
+// Only Arabic queries use keyword search (non-Arabic is semantic-only)
+export const SEMANTIC_WEIGHT = 0.4;
+export const KEYWORD_WEIGHT = 0.7;
+
+// BM25 normalization k: score/(score+k). Lower k preserves gaps between high BM25 scores.
+export const BM25_NORM_K = 3;
 
 // Minimum character count for semantic search (queries below this skip semantic)
 // Short queries (≤3 chars) lack meaningful semantic content and produce noisy results
@@ -56,5 +59,4 @@ export const FETCH_LIMIT_CAP = 100;
 export const DEFAULT_AYAH_SIMILARITY_CUTOFF = 0.28;
 
 // Hadith collections excluded from default search results
-// Suyuti's Jami al-Kabir has ~46K hadiths that flood results with duplicates of primary collections
-export const EXCLUDED_HADITH_COLLECTIONS = new Set(["suyuti"]);
+export const EXCLUDED_HADITH_COLLECTIONS = new Set<string>();
