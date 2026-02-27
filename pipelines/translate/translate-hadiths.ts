@@ -151,8 +151,8 @@ Consistency rules (IMPORTANT — follow these strictly for every hadith in the b
 - Clarifying markers: When you add words not explicitly in the Arabic to clarify meaning, wrap them in ˹...˺ (Unicode angle brackets). Use these for implied subjects, contextual glosses, or disambiguations that aid the reader. Do NOT overuse them — only when the added word is genuinely absent from the Arabic but needed for natural ${languageName}.
 - KITAB headings: Translate the meaning into natural ${languageName}. Do NOT transliterate Arabic titles. E.g. "كتاب الصلاة" → "Book of Prayer", not "Kitab as-Salah".
 - Quoting: When the Prophet ﷺ or anyone is quoted speaking, always use double quotes ("...") consistently. Never use single quotes or unquoted speech.
-- MATN boundaries: The MATN field should contain ONLY the body text of the hadith. If the Arabic MATN ends with an attribution phrase like "رواه البخاري" / "متفق عليه" / "أخرجه مسلم", translate it as a separate sentence at the end but keep it in the MATN. Do NOT move it to a different field.
-- ISNAD boundaries: All narrator honorifics like "رضي الله عنه" / "رضي الله عنهما" belong in the ISNAD translation, not the MATN. If the Arabic split is imperfect, keep the honorific with the narrator it modifies (in ISNAD).
+- MATN: Translate the Arabic MATN faithfully as-is. It already contains the correct content (including phrases like "the Prophet ﷺ said", attributions, etc.). Do not rearrange, omit, or move any part of it.
+- ISNAD: Translate the Arabic ISNAD faithfully as-is. Keep all narrator honorifics where they appear in the source.
 
 Arabic hadiths:
 ${numberedInputs}
