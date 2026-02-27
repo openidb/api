@@ -180,83 +180,37 @@ Translate to ${languageName}. Respond with ONLY a valid JSON array. Example:
 // Arabic split logic
 // ---------------------------------------------------------------------------
 
-// Strip tashkeel (diacritics) for fuzzy matching
-const TASHKEEL_RE = /[\u0610-\u061A\u064B-\u065F\u0670\u06D6-\u06DC\u06DF-\u06E4\u06E7\u06E8\u06EA-\u06ED]/g;
+// Tashkeel (diacritics) pattern — NOT global, used only in .replace() with /g
+const TASHKEEL_CHARS = /[\u0610-\u061A\u064B-\u065F\u0670\u06D6-\u06DC\u06DF-\u06E4\u06E7\u06E8\u06EA-\u06ED]/;
 
-// Normalize salawat symbols and common ligatures for matching
-function normalizeForMatch(text: string): string {
-  return text
-    .replace(TASHKEEL_RE, "")
-    .replace(/\uFD41/g, "رضي الله عنه")  // ﵁
-    .replace(/\uFD44/g, "رضي الله عنهما") // ﵄
-    .replace(/\uFD42/g, "رضي الله عنها")  // ﵂
-    .replace(/\uFDFA/g, "صلى الله عليه وسلم") // ﷺ
-    .replace(/\uFD4C/g, "صلى الله عليه وسلم") // ﵌
-    .replace(/\s+/g, " ")
-    .trim();
-}
-
-/**
- * Build a mapping from normalized string positions back to original positions.
- * Returns an array where indexMap[normPos] = origPos.
- */
-function buildIndexMap(original: string): { normalized: string; indexMap: number[] } {
-  const indexMap: number[] = [];
-  let normalized = "";
-
-  for (let i = 0; i < original.length; i++) {
-    const ch = original[i];
-    // Skip tashkeel (they don't appear in normalized output)
-    if (TASHKEEL_RE.test(ch)) continue;
-
-    // Expand ligatures
-    let expanded = ch;
-    if (ch === "\uFD41") expanded = "رضي الله عنه";
-    else if (ch === "\uFD44") expanded = "رضي الله عنهما";
-    else if (ch === "\uFD42") expanded = "رضي الله عنها";
-    else if (ch === "\uFDFA") expanded = "صلى الله عليه وسلم";
-    else if (ch === "\uFD4C") expanded = "صلى الله عليه وسلم";
-
-    for (let j = 0; j < expanded.length; j++) {
-      indexMap.push(i);
-      normalized += expanded[j];
-    }
-  }
-
-  // Collapse whitespace
-  const collapsed: string[] = [];
-  const collapsedMap: number[] = [];
-  let prevSpace = false;
-  for (let i = 0; i < normalized.length; i++) {
-    const ch = normalized[i];
-    if (/\s/.test(ch)) {
-      if (!prevSpace) {
-        collapsed.push(" ");
-        collapsedMap.push(indexMap[i]);
-        prevSpace = true;
-      }
-    } else {
-      collapsed.push(ch);
-      collapsedMap.push(indexMap[i]);
-      prevSpace = false;
-    }
-  }
-
-  return { normalized: collapsed.join("").trim(), indexMap: collapsedMap };
+function stripDiacritics(text: string): string {
+  return text.replace(new RegExp(TASHKEEL_CHARS.source, "g"), "");
 }
 
 function findSplitPoint(textArabic: string, matnStart: string): number {
-  // 1. Try exact substring match first
+  // 1. Try exact substring match
   const exactIdx = textArabic.indexOf(matnStart);
   if (exactIdx > 0) return exactIdx;
 
-  // 2. Fallback: normalize both and match, then map back
-  const { normalized: normText, indexMap } = buildIndexMap(textArabic);
-  const normMatn = normalizeForMatch(matnStart);
-  const normIdx = normText.indexOf(normMatn);
-  if (normIdx <= 0 || normIdx >= indexMap.length) return -1;
+  // 2. Try NFC-normalized match (handles diacritics ordering: shadda+fatha vs fatha+shadda)
+  const nfcIdx = textArabic.normalize("NFC").indexOf(matnStart.normalize("NFC"));
+  if (nfcIdx > 0) return nfcIdx;
 
-  return indexMap[normIdx];
+  // 3. Strip diacritics from both and match, then map index back to original
+  const strippedText = stripDiacritics(textArabic);
+  const strippedMatn = stripDiacritics(matnStart);
+  const strippedIdx = strippedText.indexOf(strippedMatn);
+  if (strippedIdx <= 0) return -1;
+
+  // Map stripped index back to original: walk original, counting non-diacritics
+  let nonDiacCount = 0;
+  for (let i = 0; i < textArabic.length; i++) {
+    if (!TASHKEEL_CHARS.test(textArabic[i])) {
+      if (nonDiacCount === strippedIdx) return i;
+      nonDiacCount++;
+    }
+  }
+  return -1;
 }
 
 // ---------------------------------------------------------------------------
