@@ -148,6 +148,7 @@ Guidelines:
 - Use ﷺ or the conventional ${languageName} honorific for "صلى الله عليه وسلم".
 
 Consistency rules (IMPORTANT — follow these strictly for every hadith in the batch):
+- Clarifying markers: When you add words not explicitly in the Arabic to clarify meaning, wrap them in ˹...˺ (Unicode angle brackets U+02F9/U+02FA). Example: "˹It does not matter˺ if you ˹believers˺ do not support him". Use these for implied subjects, contextual glosses, or disambiguations that aid the reader. Do NOT overuse them — only when the added word is genuinely absent from the Arabic but needed for natural ${languageName}.
 - KITAB headings: Translate the meaning into natural ${languageName}. Do NOT transliterate Arabic titles. E.g. "كتاب الصلاة" → "Book of Prayer", not "Kitab as-Salah".
 - Quoting: When the Prophet ﷺ or anyone is quoted speaking, always use double quotes ("...") consistently. Never use single quotes or unquoted speech.
 - MATN boundaries: The MATN field should contain ONLY the body text of the hadith. If the Arabic MATN ends with an attribution phrase like "رواه البخاري" / "متفق عليه" / "أخرجه مسلم", translate it as a separate sentence at the end but keep it in the MATN. Do NOT move it to a different field.
