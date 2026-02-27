@@ -192,11 +192,7 @@ function findSplitPoint(textArabic: string, matnStart: string): number {
   const exactIdx = textArabic.indexOf(matnStart);
   if (exactIdx > 0) return exactIdx;
 
-  // 2. Try NFC-normalized match (handles diacritics ordering: shadda+fatha vs fatha+shadda)
-  const nfcIdx = textArabic.normalize("NFC").indexOf(matnStart.normalize("NFC"));
-  if (nfcIdx > 0) return nfcIdx;
-
-  // 3. Strip diacritics from both and match, then map index back to original
+  // 2. Strip diacritics from both and match, then map index back to original
   const strippedText = stripDiacritics(textArabic);
   const strippedMatn = stripDiacritics(matnStart);
   const strippedIdx = strippedText.indexOf(strippedMatn);
