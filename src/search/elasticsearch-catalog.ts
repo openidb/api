@@ -12,12 +12,12 @@ import { qdrant, PAGES_COLLECTION } from "../qdrant";
 
 let indexedBookIdsCache: { ids: Set<string>; expiry: number } | null = null;
 
-// 24 Turath hadith source book IDs — their content is indexed per-hadith
+// 23 Turath hadith source book IDs — their content is indexed per-hadith
 // (in separate ES/Qdrant collections), not per-page, so they always count as fully indexed.
 const HADITH_SOURCE_BOOK_IDS = new Set([
   "1681", "1727", "1726", "7895", "1339", "1198", "25794", "1699",
   "21795", "8360", "17757", "12991", "2348", "13037", "12836", "19482",
-  "31307", "8494", "1424", "537", "1733", "148486", "8361", "127677",
+  "31307", "8494", "1424", "537", "1733", "148486", "8361",
 ]);
 
 /**
