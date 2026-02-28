@@ -37,7 +37,6 @@ const LANGUAGE_NAMES: Record<string, string> = {
 
 const MODEL_MAP: Record<string, string> = {
   "gemini-flash": "google/gemini-3-flash-preview",
-  "gpt-oss-120b": "openai/gpt-oss-120b",
 };
 
 // ---------------------------------------------------------------------------
