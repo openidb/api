@@ -301,21 +301,24 @@ function parseStandard(
   let currentBab = "";
   const hadiths: ParsedHadith[] = [];
 
-  // Build concatenated text with page position tracking
-  // NOTE: Strip footnote markers per-page BEFORE concatenation so that
-  // pageBreakPositions and fullText positions stay in sync.
+  // Build concatenated text with page position tracking.
+  // Split footnotes PER-PAGE before concatenation so multi-page hadith text
+  // isn't swallowed by the first page's footnote separator.
   const pageBreakPositions: { pos: number; page: PageData }[] = [];
+  const pageFootnotes: Map<number, string> = new Map(); // pageNumber → footnotes
   let fullText = "";
 
   for (const seg of pages) {
     const stripped = stripFootnoteMarkers(seg.contentPlain);
+    const { main, footnotes } = splitFootnotes(stripped);
+    if (footnotes) pageFootnotes.set(seg.pageNumber, footnotes);
     if (fullText.length > 0) {
       pageBreakPositions.push({ pos: fullText.length, page: seg });
       fullText += "\n";
     } else {
       pageBreakPositions.push({ pos: 0, page: seg });
     }
-    fullText += stripped;
+    fullText += main;
   }
 
   // Check for special initial kitab
@@ -437,13 +440,20 @@ function parseStandard(
     const startPage = getPageAtPos(hs.matchEnd);
     const endPage = getPageAtPos(Math.min(nextStart - 1, fullText.length - 1));
 
-    // Split footnotes
-    const { main: mainRaw, footnotes: footnotesRaw } = splitFootnotes(hadithBody);
+    // Collect footnotes from pages this hadith spans (already split per-page)
+    const startPageNum = startPage.pageNumber;
+    const endPageNum = endPage.pageNumber;
+    const hadithFootnotes: string[] = [];
+    for (let pn = startPageNum; pn <= endPageNum; pn++) {
+      const fn = pageFootnotes.get(pn);
+      if (fn) hadithFootnotes.push(fn);
+    }
+    const footnotesRaw = hadithFootnotes.length > 0 ? hadithFootnotes.join("\n") : null;
 
     // Strip trailing headings if configured (from both main body and footnotes)
     const main = config.stripTrailingHeadings
-      ? stripTrailingHeadings(mainRaw)
-      : mainRaw;
+      ? stripTrailingHeadings(hadithBody)
+      : hadithBody;
     const footnotes = config.stripTrailingHeadings && footnotesRaw
       ? stripFootnoteTrailingHeadings(footnotesRaw) || null
       : footnotesRaw;

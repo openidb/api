@@ -19,11 +19,15 @@ export async function callOpenRouter(opts: {
   messages: Array<{ role: string; content: string }>;
   temperature?: number;
   timeoutMs?: number;
+  maxTokens?: number;
 }): Promise<{ content: string } | null> {
   const apiKey = process.env.OPENROUTER_API_KEY;
   if (!apiKey) return null;
 
-  const { model, messages, temperature = 0, timeoutMs = 15000 } = opts;
+  const { model, messages, temperature = 0, timeoutMs = 15000, maxTokens } = opts;
+
+  const body: Record<string, any> = { model, messages, temperature };
+  if (maxTokens) body.max_tokens = maxTokens;
 
   const response = await fetchWithTimeout(
     OPENROUTER_URL,
@@ -33,7 +37,7 @@ export async function callOpenRouter(opts: {
         Authorization: `Bearer ${apiKey}`,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ model, messages, temperature }),
+      body: JSON.stringify(body),
     },
     timeoutMs
   );
@@ -45,5 +49,9 @@ export async function callOpenRouter(opts: {
 
   const data = await response.json();
   const content = data.choices?.[0]?.message?.content || "";
+  const finishReason = data.choices?.[0]?.finish_reason;
+  if (finishReason && finishReason !== "stop") {
+    console.warn(`[openrouter] finish_reason: ${finishReason} (usage: ${JSON.stringify(data.usage || {})})`);
+  }
   return { content };
 }

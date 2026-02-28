@@ -17,6 +17,7 @@ import "../env";
 import { prisma } from "../../src/db";
 import { callOpenRouter } from "../../src/lib/openrouter";
 import { COLLECTIONS, type CollectionConfig } from "../import/turath-hadith-configs";
+import { appendFileSync } from "fs";
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -32,8 +33,13 @@ const LANGUAGE_NAMES: Record<string, string> = {
   uz: "Uzbek", yo: "Yoruba", ta: "Tamil",
 };
 
-const MODEL = "google/gemini-3-flash-preview";
+const DEFAULT_MODEL = "google/gemini-3-flash-preview";
+const FALLBACK_MODEL = "google/gemini-2.5-pro-preview";
 const MODEL_KEY = "gemini-flash";
+
+// Use --model=fallback to switch to Claude Haiku (for hadiths that trigger Gemini safety filters)
+const usesFallback = process.argv.includes("--model=fallback");
+const MODEL = usesFallback ? FALLBACK_MODEL : DEFAULT_MODEL;
 
 // ---------------------------------------------------------------------------
 // Types
@@ -79,8 +85,8 @@ function parseArgs(): CLIArgs {
   const args = process.argv.slice(2);
   let lang = "";
   let collectionSlug: string | null = null;
-  let concurrency = 10;
-  let batchSize = 5;
+  let concurrency = 30;
+  let batchSize = 3;
   let force = false;
   let dryRun = false;
 
@@ -168,6 +174,7 @@ Consistency rules (IMPORTANT — follow these strictly for every hadith in the b
 - KITAB headings: Translate the meaning into natural ${languageName}. Do NOT transliterate Arabic titles. E.g. "كتاب الصلاة" → "Book of Prayer", not "Kitab as-Salah".
 - Quoting: When the Prophet ﷺ or anyone is quoted speaking, always use double quotes ("...") consistently. Never use single quotes or unquoted speech.
 - Translate the Arabic text faithfully as-is. Do not rearrange, omit, or move any part of it.
+- CRITICAL: Only translate the exact text provided in each field. Do NOT complete, extend, or add content from memory even if you recognize a well-known hadith. If the TEXT appears truncated or incomplete, translate only what is given — do not fill in the rest.
 
 Arabic hadiths:
 ${numberedInputs}
@@ -180,30 +187,77 @@ Translate to ${languageName}. Respond with ONLY a valid JSON array. Example:
 // Arabic split logic
 // ---------------------------------------------------------------------------
 
-// Tashkeel (diacritics) pattern — NOT global, used only in .replace() with /g
-const TASHKEEL_CHARS = /[\u0610-\u061A\u064B-\u065F\u0670\u06D6-\u06DC\u06DF-\u06E4\u06E7\u06E8\u06EA-\u06ED]/;
+// Tashkeel (diacritics) + tatweel
+const DIACRITICS_RE = /[\u0610-\u061A\u064B-\u065F\u0670\u06D6-\u06DC\u06DF-\u06E4\u06E7\u06E8\u06EA-\u06ED\u0640]/;
 
-function stripDiacritics(text: string): string {
-  return text.replace(new RegExp(TASHKEEL_CHARS.source, "g"), "");
+// Arabic ligature expansions (single-char honorifics → spelled-out forms)
+const LIGATURE_MAP: Record<string, string> = {
+  "\uFDFA": "صلى الله عليه وسلم",   // ﷺ
+  "\uFD41": "رضي الله عنه",          // ﵁
+  "\uFD42": "رضي الله عنها",         // ﵂
+  "\uFD43": "رضي الله عنهم",         // ﵃
+  "\uFD44": "رضي الله عنهما",        // ﵄
+  "\uFDFD": "بسم الله الرحمن الرحيم", // ﷽
+};
+
+// Match any ligature char (including unknown ones we just strip)
+const LIGATURE_RE = /[\uFD40-\uFD4F\uFDF0-\uFDFF]/g;
+
+function expandLigatures(text: string): string {
+  return text.replace(LIGATURE_RE, (ch) => LIGATURE_MAP[ch] ?? "");
 }
 
+function normalize(text: string): string {
+  return expandLigatures(text)
+    .replace(new RegExp(DIACRITICS_RE.source, "g"), "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+// For index mapping, we need to know how many normalized chars each original char produces.
+// Walk original text char by char, tracking the cumulative normalized length.
 function findSplitPoint(textArabic: string, matnStart: string): number {
   // 1. Try exact substring match
   const exactIdx = textArabic.indexOf(matnStart);
   if (exactIdx > 0) return exactIdx;
 
-  // 2. Strip diacritics from both and match, then map index back to original
-  const strippedText = stripDiacritics(textArabic);
-  const strippedMatn = stripDiacritics(matnStart);
-  const strippedIdx = strippedText.indexOf(strippedMatn);
-  if (strippedIdx <= 0) return -1;
+  // 2. Normalize both and match
+  const normText = normalize(textArabic);
+  const normMatn = normalize(matnStart);
+  const normIdx = normText.indexOf(normMatn);
+  if (normIdx <= 0) return -1;
 
-  // Map stripped index back to original: walk original, counting non-diacritics
-  let nonDiacCount = 0;
-  for (let i = 0; i < textArabic.length; i++) {
-    if (!TASHKEEL_CHARS.test(textArabic[i])) {
-      if (nonDiacCount === strippedIdx) return i;
-      nonDiacCount++;
+  // 3. Map normalized index back to original position
+  // Build a mapping: for each original char, track how many normalized chars it contributes
+  let normCount = 0;
+  let i = 0;
+  while (i < textArabic.length) {
+    if (normCount >= normIdx) return i;
+    const ch = textArabic[i];
+    const cp = ch.codePointAt(0)!;
+
+    if (DIACRITICS_RE.test(ch)) {
+      // Diacritic/tatweel — stripped, contributes 0
+      i++;
+    } else if (cp >= 0xFD40 && cp <= 0xFDFF) {
+      // Ligature — expands to multiple chars (or 0 if unknown)
+      const expansion = LIGATURE_MAP[ch];
+      if (expansion) {
+        // The expansion after stripping diacritics and collapsing whitespace
+        const normExpansion = expansion
+          .replace(new RegExp(DIACRITICS_RE.source, "g"), "");
+        normCount += normExpansion.length;
+      }
+      // Unknown ligatures contribute 0
+      i++;
+    } else if (/\s/.test(ch)) {
+      // Whitespace run → 1 normalized char
+      normCount++;
+      i++;
+      while (i < textArabic.length && /\s/.test(textArabic[i])) i++;
+    } else {
+      normCount++;
+      i++;
     }
   }
   return -1;
@@ -218,6 +272,8 @@ function cleanLLMResponse(content: string): string {
   if (cleaned.startsWith("```json")) cleaned = cleaned.slice(7);
   else if (cleaned.startsWith("```")) cleaned = cleaned.slice(3);
   if (cleaned.endsWith("```")) cleaned = cleaned.slice(0, -3);
+  // Fix LLM outputting JS string concatenation inside JSON values: "foo" + "bar" → "foobar"
+  cleaned = cleaned.replace(/"\s*\+\s*"/g, "");
   return cleaned.trim();
 }
 
@@ -242,12 +298,22 @@ async function translateBatchWithRetry(
         messages: [{ role: "user", content: prompt }],
         temperature: 0.3,
         timeoutMs: 120_000,
+        maxTokens: 16_384,
       });
 
       if (!result) throw new Error("No response from OpenRouter");
 
       const cleaned = cleanLLMResponse(result.content);
-      const parsed = JSON.parse(cleaned);
+      let parsed: any;
+      try {
+        parsed = JSON.parse(cleaned);
+      } catch (parseErr) {
+        // Dump raw response for debugging
+        const debugFile = `/tmp/debug-llm-response-${Date.now()}.txt`;
+        await Bun.write(debugFile, `=== RAW ===\n${result.content}\n\n=== CLEANED ===\n${cleaned}`);
+        console.warn(`    [debug] Raw LLM response saved to ${debugFile}`);
+        throw parseErr;
+      }
       if (!Array.isArray(parsed)) throw new Error("LLM response is not an array");
 
       const results: LLMResultItem[] = [];
@@ -291,6 +357,7 @@ async function translateBatchWithRetry(
 let splitFound = 0;
 let splitNotFound = 0;
 let noSplitApplicable = 0;
+let splitMissLogPath = "";
 
 async function persistResults(
   hadiths: HadithRow[],
@@ -322,7 +389,11 @@ async function persistResults(
         }
       } else {
         splitNotFound++;
-        console.warn(`    [split miss] #${hadith.hadithNumber}: matnStart="${r.matnStart.slice(0, 60)}" not found in text`);
+        const missLine = `${hadith.bookId}\t${hadith.hadithNumber}\t${r.matnStart.slice(0, 80)}\t${hadith.textArabic.slice(0, 120)}`;
+        if (splitMissLogPath) {
+          try { appendFileSync(splitMissLogPath, missLine + "\n"); } catch {}
+        }
+        console.warn(`    [split miss] #${hadith.hadithNumber}: matnStart="${r.matnStart.slice(0, 60)}" not found`);
       }
     } else {
       noSplitApplicable++;
@@ -514,10 +585,13 @@ async function main() {
   let grandTotal = 0;
   let grandFailed = 0;
 
-  // Reset split counters
+  // Reset split counters and init miss log
   splitFound = 0;
   splitNotFound = 0;
   noSplitApplicable = 0;
+  splitMissLogPath = `/tmp/split-misses-${args.lang}-${Date.now()}.tsv`;
+  appendFileSync(splitMissLogPath, "bookId\thadithNumber\tmatnStart\ttextStart\n");
+  console.log(`Split miss log: ${splitMissLogPath}`);
 
   for (const slug of slugs) {
     const config = COLLECTIONS[slug];
