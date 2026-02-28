@@ -21,25 +21,28 @@ import { HeadObjectCommand, PutObjectCommand } from "@aws-sdk/client-s3";
 // CLI args
 // ---------------------------------------------------------------------------
 
-function parseArgs(): { id: string; dryRun: boolean } {
+function parseArgs(): { id: string; dryRun: boolean; skipPdfs: boolean } {
   const args = process.argv.slice(2);
   let id = "";
   let dryRun = false;
+  let skipPdfs = false;
 
   for (const arg of args) {
     if (arg.startsWith("--id=")) {
       id = arg.slice(5);
     } else if (arg === "--dry-run") {
       dryRun = true;
+    } else if (arg === "--skip-pdfs") {
+      skipPdfs = true;
     }
   }
 
   if (!id) {
-    console.error("Usage: bun run pipelines/import/import-turath.ts --id=<book_id> [--dry-run]");
+    console.error("Usage: bun run pipelines/import/import-turath.ts --id=<book_id> [--dry-run] [--skip-pdfs]");
     process.exit(1);
   }
 
-  return { id, dryRun };
+  return { id, dryRun, skipPdfs };
 }
 
 // ---------------------------------------------------------------------------
@@ -1025,16 +1028,17 @@ export async function importTurathBook(
 // ---------------------------------------------------------------------------
 
 async function main() {
-  const { id, dryRun } = parseArgs();
+  const { id, dryRun, skipPdfs } = parseArgs();
 
   console.log("Turath Book Import");
   console.log("=".repeat(60));
   console.log(`Book ID:            ${id}`);
   console.log(`Mode:               ${dryRun ? "DRY RUN (no DB writes)" : "LIVE IMPORT"}`);
+  if (skipPdfs) console.log(`PDFs:               SKIPPED`);
   console.log("=".repeat(60));
   console.log();
 
-  const result = await importTurathBook(id, { dryRun });
+  const result = await importTurathBook(id, { dryRun, skipPdfs });
 
   if (!result.success) {
     process.exit(1);
