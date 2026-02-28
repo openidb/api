@@ -87,7 +87,7 @@ function parseArgs(): CLIArgs {
   let maxTokens = 8000;
   let force = false;
   let dryRun = false;
-  let startPage = 1;
+  let startPage = 0;
   let delay = 200;
 
   for (const arg of args) {
