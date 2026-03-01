@@ -465,7 +465,8 @@ booksRoutes.openapi(getPageTranslation, async (c) => {
     return c.json({ error: "Translation not found" }, 404);
   }
 
-  c.header("Cache-Control", "public, max-age=86400, stale-while-revalidate=86400, immutable");
+  c.header("Cache-Control", "public, max-age=3600, stale-while-revalidate=86400");
+  if (translation.contentHash) c.header("ETag", `"${translation.contentHash}"`);
   return c.json({
     paragraphs: translation.paragraphs as { index: number; translation: string }[],
     contentHash: translation.contentHash,
