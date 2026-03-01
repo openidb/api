@@ -246,39 +246,24 @@ async function translateChunkWithRetry(
 Translate the following Arabic paragraphs to ${targetLanguage}.
 Each paragraph is numbered [N]. Return a JSON array: [{"index": N, "translation": "..."}].
 
-IMPORTANT — All paragraphs come from consecutive pages of the same book.
-Some paragraphs may be continuations of the previous one (split across pages).
-Use the full context to disambiguate pronouns, maintain consistent terminology,
-and understand technical terms in context. Translate each paragraph exactly as given —
-do NOT merge or combine paragraphs, even if they are continuations.
+All paragraphs come from consecutive pages of the same book. Some may be continuations split across pages. Use full context to disambiguate pronouns and maintain consistent terminology. Translate each paragraph exactly as given — do NOT merge or combine paragraphs.
 
 ═══ ISLAMIC TERMINOLOGY ═══
-Preserve Islamic terminology in their conventional ${targetLanguage === "English" ? "English/transliterated" : targetLanguage} forms:
-- Surah names: keep standard transliteration (e.g. al-Baqarah, al-Qasas) — do NOT translate into literal meanings
-- "الله" → "Allah", "محمد" → "Muhammad" or "the Prophet Muhammad"
-- "القرآن" → "Quran", "الرسول" → "the Messenger" or "the Prophet"
-- "صلى الله عليه وسلم" → "peace be upon him" or "ﷺ"
-- Keep: Salah, Zakat, Hajj, Iman, Taqwa, Sunnah, Hadith, Fiqh, Tafsir, Ijma, Qiyas, etc.
+Preserve terms in conventional ${targetLanguage === "English" ? "English/transliterated" : targetLanguage} forms. Surah names: standard transliteration (al-Baqarah, not "The Cow"). Keep: Allah, Salah, Zakat, Hajj, Iman, Taqwa, Sunnah, Hadith, Fiqh, Tafsir, etc. "صلى الله عليه وسلم" → "ﷺ"
 
-═══ QURAN VERSES — THIS IS THE MOST CRITICAL RULE ═══
+═══ QURAN VERSES — MOST CRITICAL RULE ═══
 NEVER translate Quran text yourself. Replace EVERY Quran verse with a {{Q:surah:ayah}} marker.
 
-How to detect Quran verses:
-• Text inside Quranic brackets ﴿...﴾ is ALWAYS a Quran verse.
-• Text after "قال تعالى", "قوله تعالى", "لقوله", "كقوله" is almost always a Quran verse.
-• Any well-known Quran phrase you recognize, even without brackets or attribution.
+Detection:
+• ﴿...﴾ brackets = ALWAYS a Quran verse
+• After "قال تعالى", "قوله تعالى", "لقوله", "كقوله" = almost always a Quran verse
+• Any Quran phrase you recognize, even without brackets
 
-Format: {{Q:surah_number:ayah_number}} or {{Q:surah_number:start-end}} for ranges.
+Format: {{Q:surah:ayah}} or {{Q:surah:start-end}} for ranges. Keep surah references [البقرة: ٢٨٢] → [al-Baqarah: 282] AFTER the marker.
 
-When the Arabic has a surah reference like [البقرة: ٢٨٢], translate the reference as [al-Baqarah: 282] and place it AFTER the marker. The marker replaces the verse text; the reference is kept beside it.
-
-Full examples from real text:
-
+Examples:
 ARABIC: كقوله: ﴿فَكَذَّبُوهُ فَعَقَرُوهَا فَدَمْدَمَ عَلَيْهِمْ رَبُّهُمْ بِذَنْبِهِمْ فَسَوَّاهَا﴾ [الشمس: ١٤] وقوله: ﴿فَعَصَوْا رَسُولَ رَبِّهِمْ فَأَخَذَهُمْ أَخْذَةً رَابِيَةً﴾ [الحاقة: ١٠]
 → such as His saying: {{Q:91:14}} [ash-Shams: 14], and His saying: {{Q:69:10}} [al-Haqqah: 10]
-
-ARABIC: كقوله: ﴿فَلَمَّا آسَفُونَا انْتَقَمْنَا مِنْهُمْ﴾ [الزخرف: ٥٥]
-→ such as His saying: {{Q:43:55}} [az-Zukhruf: 55]
 
 ARABIC: كما في قوله تعالى في سورة النساء (٩٣): ﴿وَمَنْ يَقْتُلْ مُؤْمِنًا مُتَعَمِّدًا فَجَزَاؤُهُ جَهَنَّمُ خَالِدًا فِيهَا وَغَضِبَ اللَّهُ عَلَيْهِ وَلَعَنَهُ وَأَعَدَّ لَهُ عَذَابًا عَظِيمًا﴾
 → As in the saying of the Exalted in Surah an-Nisa' (93): {{Q:4:93}}
@@ -286,47 +271,23 @@ ARABIC: كما في قوله تعالى في سورة النساء (٩٣): ﴿و
 ARABIC: ﴿فَلَوْلَا أَنَّهُ كَانَ مِنَ الْمُسَبِّحِينَ (١٤٣) لَلَبِثَ فِي بَطْنِهِ إِلَى يَوْمِ يُبْعَثُونَ (١٤٤)﴾ [الصافات: ١٤٣ - ١٤٤]
 → {{Q:37:143-144}} [as-Saffat: 143-144]
 
-If a verse spans a page break and is truncated, still mark what you can identify.
-If you truly cannot identify the surah/ayah, translate as a last resort — but this should be extremely rare.
+If truncated at a page break, still mark what you can identify. Only translate a verse directly as a last resort if you truly cannot identify surah/ayah.
 
 ═══ POETRY ═══
-Arabic poetry lines use … (ellipsis) or a midline break to separate hemistichs. Preserve the verse structure:
-- Translate each line of poetry as a separate line
-- Use " / " to separate the two hemistichs within a line
-- Keep the poetic register — do not flatten into prose
-
-Example:
-ARABIC: فإن كنتَ قد أوحشتك الذنوبُ … فدَعْها إذا شئتَ واستأْنسِ
-→ "If sins have made you feel alienated / then leave them if you wish, and feel at ease."
+Preserve verse structure. Use " / " to separate hemistichs. Keep the poetic register.
+Example: فإن كنتَ قد أوحشتك الذنوبُ … فدَعْها إذا شئتَ واستأْنسِ → "If sins have made you feel alienated / then leave them if you wish, and feel at ease."
 
 ═══ FOOTNOTES & MANUSCRIPT VARIANTS ═══
-Footnotes below the separator line (____) reference manuscripts using Arabic sigla (ف، ز، ل، س، خ‌أ, etc.). Use consistent format:
-- Translate sigla as single uppercase letters: ف→F, ز→Z, ل→L, س→S, خ‌أ→KhA
-- Format: "(N) F: 'variant reading.'" or "(N) In F: 'variant reading.'"
-- For cross-references: "(N) See: [book title] (volume/page)."
-- Keep footnote numbering as-is: (1), (2), (3)...
+Manuscript sigla: ف→F, ز→Z, ل→L, س→S, خ‌أ→KhA. Format: "(N) Z: 'variant.'" Cross-refs: "(N) See: [title] (vol/page)."
+Examples:
+(^١) ز: "فكر". → (1) Z: "thought."
+(^٣) سبق في ص (١٣٣). → (3) Previously mentioned on p. 133.
 
-Example:
-ARABIC: (^١) ز: "فكر".
-→ (1) Z: "thought."
-
-ARABIC: (^٣) سبق في ص (١٣٣).
-→ (3) Previously mentioned on p. 133.
-
-ARABIC: (^١) كما في قوله تعالى في سورة النساء (٩٣): ﴿وَمَنْ يَقْتُلْ مُؤْمِنًا مُتَعَمِّدًا...﴾
-→ (1) As in the saying of the Exalted in Surah an-Nisa' (93): {{Q:4:93}}.
-
-═══ SPEECH & QUOTING ═══
-When the text reports speech ("قال", "قالت", "قال رسول الله"), use double quotes ("...") for the quoted words. Be consistent.
-
-═══ SECTION HEADERS ═══
-Section titles ("باب كذا", "فصل في كذا") should be translated concisely as headings — do not add extra words or turn them into full sentences.
-
-═══ TONE & REGISTER ═══
-Match the style of the original Arabic. Scholarly → formal. Narrative → narrative. Devotional → devotional. Do not flatten the author's voice.
-
-═══ CLARIFYING MARKERS ═══
-When you add words not in the Arabic to clarify meaning, wrap them in ˹...˺ (Unicode angle brackets). Use for implied subjects, contextual glosses, or disambiguations.
+═══ FORMATTING RULES ═══
+• Speech: use double quotes for all direct quotations ("قال", "قالت")
+• Section headers ("باب", "فصل"): translate concisely as headings, not full sentences
+• Tone: match the original register — scholarly, narrative, or devotional
+• Clarifying markers: wrap added words in ˹...˺ for implied subjects or disambiguations
 
 ═══ ANTI-HALLUCINATION ═══
 CRITICAL: Only translate the exact text provided. Do NOT complete, extend, or add content from memory even if you recognize a passage. If a paragraph is truncated, translate only what is given.
