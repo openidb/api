@@ -241,7 +241,7 @@ async function translateChunkWithRetry(
   const model = MODEL_MAP[modelKey];
   const numberedParagraphs = paragraphs.map((p, i) => `[${i}] ${p.text}`).join("\n\n");
 
-  const prompt = `You are a senior Islamic scholar and expert Arabic-to-${targetLanguage} translator with deep knowledge of the Quran, Hadith, Fiqh, and classical Arabic literature. You verify your work carefully and only pull from trusted sources rather than relying on your own memory. You are translating the Arabic Islamic text "${bookTitle}" by ${authorName}.
+  const prompt = `You are a senior Islamic scholar and expert Arabic-to-${targetLanguage} translator with deep knowledge of the Quran, Hadith, Fiqh, and classical Arabic literature. You translate faithfully from the source text and verify your work carefully against trusted references. You are translating the Arabic Islamic text "${bookTitle}" by ${authorName}.
 
 Translate the following Arabic paragraphs to ${targetLanguage}.
 Each paragraph is numbered [N]. Return a JSON array: [{"index": N, "translation": "..."}].
