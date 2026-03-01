@@ -254,10 +254,11 @@ Preserve terms in conventional ${targetLanguage === "English" ? "English/transli
 ═══ QURAN VERSES — MOST CRITICAL RULE ═══
 NEVER translate Quran text yourself. Replace EVERY Quran verse with a {{Q:surah:ayah}} marker.
 
-Detection:
-• ﴿...﴾ brackets = ALWAYS a Quran verse
-• After "قال تعالى", "قوله تعالى", "لقوله", "كقوله" = almost always a Quran verse
-• Any Quran phrase you recognize, even without brackets
+Detection — mark ALL of the following as Quran:
+• Any text inside Quranic brackets ﴿...﴾
+• Text following "قال تعالى", "قال الله", "قوله تعالى", "قوله عزّ وجلّ", "لقوله", "كقوله", "قال سبحانه", "قال جلّ وعلا"
+• Text following "والتي يقول الله فيها", "في قوله", "بقوله", "إلى قوله", "الآية", or similar Quran-citing phrases
+• Verses you recognize from the Quran even if not explicitly attributed
 
 Format: {{Q:surah:ayah}} or {{Q:surah:start-end}} for ranges. Keep surah references [البقرة: ٢٨٢] → [al-Baqarah: 282] AFTER the marker.
 
