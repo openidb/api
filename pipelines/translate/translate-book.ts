@@ -281,7 +281,7 @@ Section headers: Some paragraphs are chapter or section titles (e.g. "باب ك�
 
 Tone and register: Match the style and register of the original Arabic. If the text is scholarly and formal, translate formally. If it is narrative or devotional, reflect that tone. Do not flatten the author's voice into a single generic register.
 
-Clarifying markers: When you add words not explicitly in the Arabic to clarify meaning, wrap them in ˹...˺ (Unicode angle brackets). Use these for implied subjects, contextual glosses, or disambiguations that aid the reader. Do NOT overuse — only when the added word is genuinely absent from the Arabic but needed for natural ${targetLanguage}.
+Clarifying markers: When you add words not explicitly in the Arabic to clarify meaning, wrap them in ˹...˺ (Unicode angle brackets). Use these for implied subjects, contextual glosses, or disambiguations that aid the reader.
 
 CRITICAL: Only translate the exact text provided in each paragraph. Do NOT complete, extend, or add content from memory even if you recognize a well-known passage. If a paragraph appears truncated or incomplete, translate only what is given — do not fill in the rest.
 
