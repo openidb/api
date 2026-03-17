@@ -490,7 +490,6 @@ quranRoutes.openapi(getAudio, async (c) => {
   // DB slugs include source prefix: "everyayah/alafasy-128kbps"
   // Tarteel aliases map to existing per-ayah audio (avoids duplicating ~12K files)
   const AUDIO_ALIASES: Record<string, string> = {
-    "tarteel/dossary": "yasser-ad-dussary-128kbps",
     "tarteel/muaiqly": "maher-almuaiqly-128kbps",
   };
   const reciterKey = AUDIO_ALIASES[slug] || (slug.includes("/") ? slug.split("/").slice(1).join("/") : slug);
