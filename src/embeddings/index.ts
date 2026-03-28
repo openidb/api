@@ -1,8 +1,8 @@
 /**
  * Embeddings Module
  *
- * Generates embeddings using Google Gemini embedding-001 via OpenRouter (3072 dimensions)
- * and Jina embeddings-v3 (1024 dimensions).
+ * Generates embeddings using Google Gemini embedding-001 via OpenRouter (3072 dimensions),
+ * Jina embeddings-v3 (1024 dimensions), and Nemotron (2048 dimensions).
  */
 
 import {
@@ -17,7 +17,12 @@ import {
   generateJinaEmbeddings,
 } from "./jina";
 
-import { EMBEDDING_DIMENSIONS, JINA_EMBEDDING_DIMENSIONS } from "../constants";
+import {
+  generateNemotronEmbedding,
+  generateNemotronEmbeddings,
+} from "./nemotron";
+
+import { EMBEDDING_DIMENSIONS, JINA_EMBEDDING_DIMENSIONS, NEMOTRON_EMBEDDING_DIMENSIONS } from "../constants";
 
 // Re-export utilities and constants
 export {
@@ -25,10 +30,14 @@ export {
   truncateForEmbedding,
   EMBEDDING_DIMENSIONS,
   JINA_EMBEDDING_DIMENSIONS,
+  NEMOTRON_EMBEDDING_DIMENSIONS,
 };
 
 // Re-export Jina functions
 export { generateJinaEmbedding, generateJinaEmbeddings };
+
+// Re-export Nemotron functions
+export { generateNemotronEmbedding, generateNemotronEmbeddings };
 
 /**
  * Generate embedding for a single text string (Gemini, default)
