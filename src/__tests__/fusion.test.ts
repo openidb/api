@@ -8,7 +8,7 @@ import {
   mergeAndDeduplicateAyahs,
   mergeAndDeduplicateHadiths,
 } from "../routes/search/fusion";
-import { RRF_K, SEMANTIC_WEIGHT, KEYWORD_WEIGHT, FLOAT_TOLERANCE } from "../routes/search/config";
+import { RRF_K, SEMANTIC_WEIGHT, KEYWORD_WEIGHT, FLOAT_TOLERANCE, BM25_NORM_K } from "../routes/search/config";
 import type { RankedResult, AyahRankedResult, HadithRankedResult } from "../routes/search/types";
 
 // --- calculateRRFScore ---
@@ -75,8 +75,8 @@ describe("mergeWithRRFGeneric", () => {
     ];
     const result = mergeWithRRFGeneric([], keyword, (r: any) => r.id, "test");
     expect(result).toHaveLength(1);
-    // Keyword-only: fusedScore = normalizeBM25Score(10) = 10/(10+5) = 0.667
-    expect(result[0].fusedScore).toBeCloseTo(10 / (10 + 5), 3);
+    // Keyword-only: fusedScore = normalizeBM25Score(10) = 10/(10+BM25_NORM_K)
+    expect(result[0].fusedScore).toBeCloseTo(10 / (10 + BM25_NORM_K), 3);
   });
 
   test("merges overlapping results with both scores", () => {
@@ -89,7 +89,7 @@ describe("mergeWithRRFGeneric", () => {
     const result = mergeWithRRFGeneric(semantic, keyword, (r: any) => r.id, "test");
     expect(result).toHaveLength(1);
     // Both: SEMANTIC_WEIGHT * 0.8 + KEYWORD_WEIGHT * normalizeBM25(10)
-    const expectedFused = SEMANTIC_WEIGHT * 0.8 + KEYWORD_WEIGHT * (10 / (10 + 5));
+    const expectedFused = SEMANTIC_WEIGHT * 0.8 + KEYWORD_WEIGHT * (10 / (10 + BM25_NORM_K));
     expect(result[0].fusedScore).toBeCloseTo(expectedFused, 3);
   });
 
